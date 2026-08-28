@@ -5,13 +5,28 @@
 .PARAMETER ProjectPath
     プロジェクトルートの絶対パス（例: D:\programming\repos\MyApp）
 
+.PARAMETER Force
+    既存ディレクトリが空でなくても対話的な確認をスキップして続行する。
+    エージェントから実行する場合は常にこのオプションを指定する。
+
+.PARAMETER WorkflowSource
+    SDD ワークフローファイルのコピー元パス。
+    指定した場合、doc/workflow.md としてプロジェクトに配置する。
+
 .EXAMPLE
-    .\init_project.ps1 -ProjectPath "D:\programming\repos\MyApp"
+    .\init_project.ps1 -ProjectPath "D:\programming\repos\MyApp" -Force
+
+.EXAMPLE
+    .\init_project.ps1 -ProjectPath "D:\programming\repos\MyApp" -Force -WorkflowSource ".\references\sdd_workflow.md"
 #>
 
 param(
     [Parameter(Mandatory = $true)]
-    [string]$ProjectPath
+    [string]$ProjectPath,
+
+    [switch]$Force,
+
+    [string]$WorkflowSource
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,11 +41,15 @@ Write-Host "パス: $ProjectPath"
 if (Test-Path $ProjectPath) {
     $items = Get-ChildItem -Path $ProjectPath -Force
     if ($items.Count -gt 0) {
-        Write-Warning "ディレクトリ '$ProjectPath' は既に存在し、空ではありません。"
-        $response = Read-Host "続行しますか？ (y/N)"
-        if ($response -ne "y" -and $response -ne "Y") {
-            Write-Host "中止しました。" -ForegroundColor Yellow
-            exit 1
+        if (-not $Force) {
+            Write-Warning "ディレクトリ '$ProjectPath' は既に存在し、空ではありません。"
+            $response = Read-Host "続行しますか？ (y/N)"
+            if ($response -ne "y" -and $response -ne "Y") {
+                Write-Host "中止しました。" -ForegroundColor Yellow
+                exit 1
+            }
+        } else {
+            Write-Warning "ディレクトリは既に存在しますが、-Force が指定されたため続行します。"
         }
     }
 }
@@ -70,6 +89,21 @@ foreach ($file in $files) {
         Write-Host "  [作成] $file" -ForegroundColor Green
     } else {
         Write-Host "  [既存] $file" -ForegroundColor DarkGray
+    }
+}
+
+# SDD ワークフローファイルの配置
+if ($WorkflowSource) {
+    $workflowDest = Join-Path $ProjectPath "doc/workflow.md"
+    if (-not (Test-Path $workflowDest)) {
+        if (Test-Path $WorkflowSource) {
+            Copy-Item -Path $WorkflowSource -Destination $workflowDest
+            Write-Host "  [作成] doc/workflow.md (コピー元: $WorkflowSource)" -ForegroundColor Green
+        } else {
+            Write-Warning "ワークフローファイルが見つかりません: $WorkflowSource"
+        }
+    } else {
+        Write-Host "  [既存] doc/workflow.md" -ForegroundColor DarkGray
     }
 }
 
