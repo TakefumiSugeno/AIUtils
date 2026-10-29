@@ -50,10 +50,16 @@ flowchart TD
 ## 導入手順
 
 1. 対象プロジェクトで `openspec init` を実行する。
-2. キットを導入する（まず `-WhatIf` で確認推奨）:
+2. キットを導入する（まず `-WhatIf` / `--dry-run` で確認推奨）:
    ```powershell
+   # PowerShell (Windows / Cross-Platform)
    pwsh ./openspec-kit/install.ps1 -TargetPath <project-root> -BaseBranch develop -EvidenceDir test/TestResults/ -WhatIf
    pwsh ./openspec-kit/install.ps1 -TargetPath <project-root> -BaseBranch develop -EvidenceDir test/TestResults/
+   ```
+   ```bash
+   # Bash (Linux / macOS / Git Bash / WSL)
+   ./openspec-kit/install.sh --target-path <project-root> --base-branch develop --evidence-dir test/TestResults/ --dry-run
+   ./openspec-kit/install.sh --target-path <project-root> --base-branch develop --evidence-dir test/TestResults/
    ```
 3. プロジェクト固有の TODO を記入する:
    - `openspec/config.yaml` の `context` → 技術スタック、テストフレームワーク等

@@ -152,11 +152,12 @@ openspec instructions <artifact> --change "<name>" --json # 作成指示（conte
 openspec instructions apply --change "<name>" --json      # 実装指示（operations.apply.guidance を含む）
 openspec validate "<name>"                                # 変更の検証
 
-# フェーズゲート検証（openspec-kit）
+# フェーズゲート検証（openspec-kit: PowerShell 版 / Bash 版）
 pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose
 pwsh ./openspec/scripts/verify-gate.ps1 -Gate propose -ChangeName "<name>"
 pwsh ./openspec/scripts/verify-gate.ps1 -Gate apply   -ChangeName "<name>"
 pwsh ./openspec/scripts/verify-gate.ps1 -Gate archive -ChangeName "<name>"
+# Bash 環境の場合: ./openspec/scripts/verify-gate.sh --gate <pre-propose|propose|apply|archive> --change-name "<name>"
 
 # 完了
 openspec archive "<name>"                                 # アーカイブ（Gate 3 通過後）

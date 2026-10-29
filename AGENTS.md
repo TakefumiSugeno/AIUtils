@@ -27,6 +27,7 @@
 | Markdown / OpenSpec 成果物 | `**/*.md`              | Prettier         | `npx prettier --write "**/*.md"`                          |
 | JSON / YAML                | `**/*.{json,yaml,yml}` | Prettier         | `npx prettier --write "**/*.{json,yaml,yml}"`             |
 | PowerShell                 | `**/*.ps1`             | PSScriptAnalyzer | `Invoke-Formatter` / `Invoke-ScriptAnalyzer -Path <file>` |
+| Bash                       | `**/*.sh`              | bash -n          | `bash -n <file>`（LF 改行・UTF-8 BOM なし）               |
 
 > [!NOTE]
 > `openspec init` / `openspec update` による生成ファイルはフォーマット対象外とする（再生成で差分が出るため）。
@@ -62,7 +63,7 @@
 | `openspec/templates/`              | テスト計画・レビュー記録・チェックリスト・handover・PR 本文テンプレート                               |
 | `openspec/scripts/verify-gate.ps1` | フェーズゲート（Gate 0〜3 / DoD）の機械的検証スクリプト                                               |
 | `.agents/workflows/sdd-*.md`       | ゲート・サブエージェント分業を組み込んだ実行ワークフロー（`sdd-propose`, `sdd-apply`, `sdd-archive`） |
-| `test-results/`                 | テストエビデンス・カバレッジレポート出力先（Git 管理外）                                              |
+| `test-results/`                    | テストエビデンス・カバレッジレポート出力先（Git 管理外）                                              |
 
 ### 適用規模レベル（L1 / L2 / L3）と変更ディレクトリの成果物
 
@@ -128,7 +129,7 @@ L2 / L3 の変更では、コードを書く前に `openspec/templates/test_plan
 
 | ゲート     | 実行タイミング                         | 検証コマンド                                                                                                 | 完了基準（DoD / ゲート通過条件）                                                                                                                                                                       |
 | :--------- | :------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gate 0** | `openspec new change` 直前             | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose`                                                  | ・未コミット変更の退避済み<br>・最新 `main` から切った `feature/*` / `fix/*` 等のブランチ上にいること                                                                                       |
+| **Gate 0** | `openspec new change` 直前             | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose`                                                  | ・未コミット変更の退避済み<br>・最新 `main` から切った `feature/*` / `fix/*` 等のブランチ上にいること                                                                                                  |
 | **Gate 1** | Propose 合意・commit 前                | `openspec validate "<name>"`<br>`pwsh ./openspec/scripts/verify-gate.ps1 -Gate propose -ChangeName "<name>"` | ・規模レベルに応じた必須ファイル（`proposal`, `specs`, `design`, `test_plan`, `tasks`, `mockup`）が揃っていること<br>・`reviews.md` に未判定項目がなく、Propose レビューが `LGTM: true` であること     |
 | **Gate 2** | Apply 各タスクの `[x]` 更新・commit 前 | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate apply -ChangeName "<name>"`                                   | ・フォーマット差分0、静的解析エラー0、全テストPass、C0/C1/C2基準達成<br>・テストの `skip` 放置が 0 件であること<br>・`reviews.md` の最新タスクレビューが `LGTM: true` であること                       |
 | **Gate 3** | `openspec archive` 実行前              | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate archive -ChangeName "<name>"`                                 | ・`tasks.md` の未完了タスク（`- [ ]`）が 0 件であること<br>・`handover.md` が記入済みであること<br>・全4ロール総括レビュー `LGTM: true` かつユーザー最終合意（`- **合意**: あり`）が記録済みであること |
@@ -195,11 +196,12 @@ openspec instructions <artifact> --change "<name>" --json # 作成指示（conte
 openspec instructions apply --change "<name>" --json      # 実装指示（operations.apply.guidance を含む）
 openspec validate "<name>"                                # 変更の検証
 
-# フェーズゲート検証（openspec-kit）
+# フェーズゲート検証（openspec-kit: PowerShell 版 / Bash 版）
 pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose
 pwsh ./openspec/scripts/verify-gate.ps1 -Gate propose -ChangeName "<name>"
 pwsh ./openspec/scripts/verify-gate.ps1 -Gate apply   -ChangeName "<name>"
 pwsh ./openspec/scripts/verify-gate.ps1 -Gate archive -ChangeName "<name>"
+# Bash 環境の場合: ./openspec/scripts/verify-gate.sh --gate <pre-propose|propose|apply|archive> --change-name "<name>"
 
 # 完了
 openspec archive "<name>"                                 # アーカイブ（Gate 3 通過後）

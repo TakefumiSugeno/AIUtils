@@ -93,7 +93,11 @@ function Copy-KitDirectory([string]$SrcDir, [string]$DstDir, [string]$Label, [sw
         }
         if ($PSCmdlet.ShouldProcess($dst, "$Label を配置")) {
             $useBom = $Ps1WithBom -and ($file.Extension -eq '.ps1')
-            Write-Text $dst (Expand-Placeholder (Read-Text $file.FullName)) -WithBom:$useBom
+            $text = Expand-Placeholder (Read-Text $file.FullName)
+            if ($file.Extension -eq '.sh') {
+                $text = $text.Replace("`r`n", "`n")
+            }
+            Write-Text $dst $text -WithBom:$useBom
             Write-Host "  [ok]   $Label/$($file.Name)" -ForegroundColor Green
         }
     }
