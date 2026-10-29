@@ -1,15 +1,18 @@
 ﻿<#
 .SYNOPSIS
-    openspec-kit（レビュー機構・運用ルール・テンプレート）を対象プロジェクトへ導入／再同期する。
+    openspec-kit（サブエージェント6ロール・TDD/C0-C2基準・フェーズゲート・テンプレート）を対象プロジェクトへ導入／再同期する。
 
 .DESCRIPTION
-    対象プロジェクトの openspec/ に以下を導入する。
-      1. openspec/templates/   : レビュー記録・チェックリスト・handover・PR本文テンプレート
-      2. openspec/config.yaml  : 汎用設定（既存がある場合は config.kit.yaml として横に出力）
-      3. AGENTS.md             : OpenSpec 運用ルールをマーカー区間に挿入（再実行時は区間を置換）。
-                                 新規作成時はプロジェクト固有ルールの雛形（AGENTS.project.md）を区間外に出力
-      4. .gitignore            : テストエビデンス出力先を追記（未登録の場合のみ）
-      5. CLAUDE.md / GEMINI.md : AGENTS.md を正本としてインポートする入口ファイル（未作成の場合のみ）
+    対象プロジェクトの openspec/ および .agents/ に以下を導入する。
+      1. openspec/templates/        : テスト計画・レビュー記録・チェックリスト・handover・PR本文テンプレート
+      2. openspec/agents/           : 6ロールのサブエージェント定義（.claude/ がある場合は .claude/agents/ にも配置）
+      3. openspec/scripts/          : フェーズゲート機械検証スクリプト（verify-gate.ps1）
+      4. .agents/workflows/         : フェーズゲート＆TDD分業ワークフロー（sdd-propose / sdd-apply / sdd-archive）
+      5. openspec/config.yaml       : 汎用設定（既存がある場合は config.kit.yaml として横に出力）
+      6. AGENTS.md                  : OpenSpec 運用ルールをマーカー区間に挿入（再実行時は区間を置換）。
+                                      新規作成時はプロジェクト固有ルールの雛形（AGENTS.project.md）を区間外に出力
+      7. .gitignore                 : テストエビデンス出力先を追記（未登録の場合のみ）
+      8. CLAUDE.md / GEMINI.md      : AGENTS.md を正本としてインポートする入口ファイル（未作成の場合のみ）
 
     事前に対象プロジェクトで `openspec init` を実行しておくこと。
 
@@ -23,19 +26,19 @@
     テストエビデンス・カバレッジレポートの出力先（Git 管理外）。既定: test/TestResults/
 
 .PARAMETER Force
-    既存のテンプレートファイルを上書きする（キット更新後の再同期に使用）。
+    既存のテンプレート・エージェント・スクリプト・ワークフローファイルを上書きする（キット更新後の再同期に使用）。
 
 .PARAMETER OverwriteConfig
     既存の openspec/config.yaml をバックアップ（config.yaml.bak-<timestamp>）した上で上書きする。
 
 .PARAMETER SkipConfig
-    openspec/config.yaml の処理を行わない（導入済みプロジェクトでテンプレートと AGENTS.md だけを再同期する場合）。
+    openspec/config.yaml の処理を行わない（導入済みプロジェクトでテンプレートや AGENTS.md だけを再同期する場合）。
 
 .EXAMPLE
     ./install.ps1 -TargetPath D:\repos\MyApp -BaseBranch develop -WhatIf
 
 .EXAMPLE
-    ./install.ps1 -TargetPath D:\repos\MyApp -BaseBranch main -EvidenceDir test-results/ -Force
+    ./install.ps1 -TargetPath D:\repos\MyApp -BaseBranch main -EvidenceDir test-results/ -Force -SkipConfig
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
@@ -59,21 +62,41 @@ $ErrorActionPreference = 'Stop'
 $MarkerBegin = '<!-- openspec-kit:begin (install.ps1 により管理。手動編集は再同期で上書きされます) -->'
 $MarkerEnd = '<!-- openspec-kit:end -->'
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$Utf8Bom = New-Object System.Text.UTF8Encoding($true)
 
 function Read-Text([string]$Path) {
     return [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
 }
 
-function Write-Text([string]$Path, [string]$Content) {
+function Write-Text([string]$Path, [string]$Content, [switch]$WithBom) {
     $dir = Split-Path -Parent $Path
     if (-not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
-    [System.IO.File]::WriteAllText($Path, $Content, $Utf8NoBom)
+    $enc = if ($WithBom) { $Utf8Bom } else { $Utf8NoBom }
+    [System.IO.File]::WriteAllText($Path, $Content, $enc)
 }
 
 function Expand-Placeholder([string]$Text) {
     return $Text.Replace('{{BASE_BRANCH}}', $BaseBranch).Replace('{{EVIDENCE_DIR}}', $EvidenceDir)
+}
+
+function Copy-KitDirectory([string]$SrcDir, [string]$DstDir, [string]$Label, [switch]$Ps1WithBom) {
+    if (-not (Test-Path -LiteralPath $SrcDir -PathType Container)) {
+        return
+    }
+    foreach ($file in Get-ChildItem -LiteralPath $SrcDir -File) {
+        $dst = Join-Path $DstDir $file.Name
+        if ((Test-Path -LiteralPath $dst) -and -not $Force) {
+            Write-Host "  [skip] $Label/$($file.Name)（既存。上書きは -Force）" -ForegroundColor DarkYellow
+            continue
+        }
+        if ($PSCmdlet.ShouldProcess($dst, "$Label を配置")) {
+            $useBom = $Ps1WithBom -and ($file.Extension -eq '.ps1')
+            Write-Text $dst (Expand-Placeholder (Read-Text $file.FullName)) -WithBom:$useBom
+            Write-Host "  [ok]   $Label/$($file.Name)" -ForegroundColor Green
+        }
+    }
 }
 
 # --- 前提チェック -------------------------------------------------------------
@@ -91,22 +114,22 @@ Write-Host "  BaseBranch : $BaseBranch"
 Write-Host "  EvidenceDir: $EvidenceDir"
 
 # --- 1. テンプレート ----------------------------------------------------------
-$templatesSrc = Join-Path $kitRoot 'templates'
-$templatesDst = Join-Path $openspecDir 'templates'
+Copy-KitDirectory (Join-Path $kitRoot 'templates') (Join-Path $openspecDir 'templates') 'templates'
 
-foreach ($file in Get-ChildItem -LiteralPath $templatesSrc -File) {
-    $dst = Join-Path $templatesDst $file.Name
-    if ((Test-Path -LiteralPath $dst) -and -not $Force) {
-        Write-Host "  [skip] templates/$($file.Name)（既存。上書きは -Force）" -ForegroundColor DarkYellow
-        continue
-    }
-    if ($PSCmdlet.ShouldProcess($dst, 'テンプレートを配置')) {
-        Write-Text $dst (Expand-Placeholder (Read-Text $file.FullName))
-        Write-Host "  [ok]   templates/$($file.Name)" -ForegroundColor Green
-    }
+# --- 2. サブエージェント定義 --------------------------------------------------
+Copy-KitDirectory (Join-Path $kitRoot 'agents') (Join-Path $openspecDir 'agents') 'agents'
+$claudeDir = Join-Path $target '.claude'
+if (Test-Path -LiteralPath $claudeDir -PathType Container) {
+    Copy-KitDirectory (Join-Path $kitRoot 'agents') (Join-Path $claudeDir 'agents') '.claude/agents'
 }
 
-# --- 2. config.yaml -----------------------------------------------------------
+# --- 3. フェーズゲート検証スクリプト ------------------------------------------
+Copy-KitDirectory (Join-Path $kitRoot 'scripts') (Join-Path $openspecDir 'scripts') 'scripts' -Ps1WithBom
+
+# --- 4. SDD ワークフロー定義 --------------------------------------------------
+Copy-KitDirectory (Join-Path $kitRoot 'workflows') (Join-Path $target '.agents/workflows') '.agents/workflows'
+
+# --- 5. config.yaml -----------------------------------------------------------
 $configSrc = Join-Path $kitRoot 'config.yaml'
 $configDst = Join-Path $openspecDir 'config.yaml'
 $configContent = Expand-Placeholder (Read-Text $configSrc)
@@ -135,7 +158,7 @@ else {
     }
 }
 
-# --- 3. AGENTS.md -------------------------------------------------------------
+# --- 6. AGENTS.md -------------------------------------------------------------
 $snippet = Expand-Placeholder (Read-Text (Join-Path $kitRoot 'AGENTS.openspec.md'))
 $block = "$MarkerBegin`n`n$($snippet.TrimEnd())`n`n$MarkerEnd"
 $agentsPath = Join-Path $target 'AGENTS.md'
@@ -165,7 +188,7 @@ if ($PSCmdlet.ShouldProcess($agentsPath, "AGENTS.md: $action")) {
     Write-Host "  [ok]   AGENTS.md（$action。管理区間外の TODO（概要・フォーマットコマンド等）を記入してください）" -ForegroundColor Green
 }
 
-# --- 4. .gitignore ------------------------------------------------------------
+# --- 7. .gitignore ------------------------------------------------------------
 $gitignorePath = Join-Path $target '.gitignore'
 $ignoreLine = $EvidenceDir.Replace('\', '/')
 $existingIgnore = if (Test-Path -LiteralPath $gitignorePath) { Read-Text $gitignorePath } else { '' }
@@ -177,7 +200,7 @@ if (-not $alreadyIgnored -and $PSCmdlet.ShouldProcess($gitignorePath, "$ignoreLi
     Write-Host "  [ok]   .gitignore に $ignoreLine を追記" -ForegroundColor Green
 }
 
-# --- 5. エージェント別エントリファイル（AGENTS.md を正本としてインポート） -------
+# --- 8. エージェント別エントリファイル（AGENTS.md を正本としてインポート） -------
 foreach ($entry in @('CLAUDE.md', 'GEMINI.md')) {
     $entryPath = Join-Path $target $entry
     if (Test-Path -LiteralPath $entryPath) {

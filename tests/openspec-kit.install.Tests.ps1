@@ -1,10 +1,12 @@
 ﻿#Requires -Modules Pester
-# openspec-kit/install.ps1 のテスト（Pester 5）
+# openspec-kit/install.ps1 のテスト（Pester 5+）
 #   実行: Invoke-Pester ./tests/openspec-kit.install.Tests.ps1 -Output Detailed
 
 BeforeAll {
     $script:Installer = Join-Path $PSScriptRoot '..\openspec-kit\install.ps1' | Resolve-Path
     $script:KitTemplates = Join-Path $PSScriptRoot '..\openspec-kit\templates' | Resolve-Path
+    $script:KitAgents = Join-Path $PSScriptRoot '..\openspec-kit\agents' | Resolve-Path
+    $script:KitWorkflows = Join-Path $PSScriptRoot '..\openspec-kit\workflows' | Resolve-Path
 
     function New-TargetProject {
         $dir = Join-Path ([IO.Path]::GetTempPath()) ("osk-" + [guid]::NewGuid().ToString('N'))
@@ -31,12 +33,41 @@ Describe 'install.ps1' {
     }
 
     Context '新規導入' {
-        BeforeEach { Invoke-Installer $script:Target @{ BaseBranch = 'trunk'; EvidenceDir = 'out/evidence/' } }
+        BeforeEach {
+            New-Item -ItemType Directory -Path (Join-Path $script:Target '.claude') -Force | Out-Null
+            Invoke-Installer $script:Target @{ BaseBranch = 'trunk'; EvidenceDir = 'out/evidence/' }
+        }
 
-        It '全テンプレートを配置する' {
+        It '全テンプレート（test_plan.md 含む）を配置する' {
             $expected = Get-ChildItem $script:KitTemplates -File | ForEach-Object Name | Sort-Object
             $actual = Get-ChildItem (Join-Path $script:Target 'openspec/templates') -File | ForEach-Object Name | Sort-Object
             $actual | Should -Be $expected
+            $actual | Should -Contain 'test_plan.md'
+        }
+
+        It '6ロールのサブエージェント定義を openspec/agents と .claude/agents に配置する' {
+            $expected = Get-ChildItem $script:KitAgents -File | ForEach-Object Name | Sort-Object
+            $actualOpenSpec = Get-ChildItem (Join-Path $script:Target 'openspec/agents') -File | ForEach-Object Name | Sort-Object
+            $actualClaude = Get-ChildItem (Join-Path $script:Target '.claude/agents') -File | ForEach-Object Name | Sort-Object
+            $actualOpenSpec | Should -Be $expected
+            $actualClaude | Should -Be $expected
+            $actualOpenSpec.Count | Should -Be 6
+        }
+
+        It 'verify-gate.ps1 を UTF-8 BOM 付きで openspec/scripts に配置し、プレースホルダを置換する' {
+            $gateScript = Join-Path $script:Target 'openspec/scripts/verify-gate.ps1'
+            $gateScript | Should -Exist
+            $bytes = [IO.File]::ReadAllBytes($gateScript)
+            ($bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) | Should -BeTrue
+            $text = Read-Utf8 $gateScript
+            $text | Should -Match "BaseBranch = 'trunk'"
+        }
+
+        It 'SDD ワークフロー（sdd-propose / sdd-apply / sdd-archive）を .agents/workflows に配置する' {
+            $expected = Get-ChildItem $script:KitWorkflows -File | ForEach-Object Name | Sort-Object
+            $actual = Get-ChildItem (Join-Path $script:Target '.agents/workflows') -File | ForEach-Object Name | Sort-Object
+            $actual | Should -Be $expected
+            Read-Utf8 (Join-Path $script:Target '.agents/workflows/sdd-propose.md') | Should -Match 'git checkout trunk'
         }
 
         It 'config.yaml のプレースホルダを置換する' {
@@ -68,7 +99,7 @@ Describe 'install.ps1' {
             (Read-Utf8 (Join-Path $script:Target 'GEMINI.md')).Trim() | Should -Be '@AGENTS.md'
         }
 
-        It 'BOM なし UTF-8 で書き込む' {
+        It 'Markdown ファイルは BOM なし UTF-8 で書き込む' {
             $bytes = [IO.File]::ReadAllBytes((Join-Path $script:Target 'AGENTS.md'))
             ($bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB) | Should -BeFalse
         }
