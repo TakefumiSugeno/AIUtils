@@ -16,11 +16,24 @@ OpenSpec の標準 `/opsx-propose` に、**ブランチ安全シーケンス（G
    # 変更がある場合は破棄せず退避
    git stash push -u -m "wip: backup before switch to <change-name>"
    ```
-2. ベースブランチの最新化とトピックブランチ作成:
-   ```bash
+2. ベースブランチの最新化とマージ済みブランチ削除・新トピックブランチ作成:
+   ```powershell
+   # PowerShell 環境
    git checkout main
    git pull origin main
+   git fetch --prune
+   # マージ済みローカルブランチを一括削除（main, main, master 等は除外保護）
+   git branch --merged main | Where-Object { $_.Trim() -notmatch '^(main|main|master|\*)' } | ForEach-Object { git branch -d $_.Trim() }
    git checkout -b feature/<change-name>   # バグ修正は fix/<change-name>、リファクタは refactor/<change-name>
+   ```
+   ```bash
+   # Bash 環境
+   git checkout main
+   git pull origin main
+   git fetch --prune
+   # マージ済みローカルブランチを一括削除（main, main, master 等は除外保護）
+   git branch --merged main | grep -vE "^(\*|main|main|master)$" | xargs -r git branch -d
+   git checkout -b feature/<change-name>
    ```
 3. **Gate 0 検証スクリプトの実行**:
    ```powershell

@@ -10,7 +10,7 @@
       - pre-propose (Gate 0): トピックブランチ（feature/*, fix/* 等）上にいるか、ベースブランチ直作業でないか
       - propose     (Gate 1): 必須計画成果物（proposal/specs/design/test_plan/tasks/mockup）と Propose レビュー LGTM の確認
       - apply       (Gate 2): Apply レビュー記録（LGTM・未記入プレースホルダなし）とテスト skip 放置がないことの確認
-      - archive     (Gate 3): 全タスク [x] 完了、handover.md 記入済み、総括レビュー LGTM、ユーザー最終合意「あり」の確認
+      - archive     (Gate 3): 全タスク [x] 完了、handover.md 記入済み、総括レビュー LGTM、DoD（テスト・skip放置0）の確認
 
 .PARAMETER Gate
     検証するゲート名（pre-propose | propose | apply | archive）。
@@ -297,16 +297,8 @@ if ($Gate -eq 'archive') {
         }
     }
 
-    $reviewsPath = Join-Path $changeDir 'reviews.md'
-    if (Test-Path -LiteralPath $reviewsPath -PathType Leaf) {
-        $rev = Read-Utf8 $reviewsPath
-        if ($rev -notmatch '(?m)^-\s*\*\*合意\*\*:\s*あり\b') {
-            Fail "reviews.md にユーザー最終合意（'- **合意**: あり'）が記録されていません"
-        }
-        else {
-            Pass "ユーザー最終合意（合意: あり）記録確認"
-        }
-    }
+    # 4ロール総括レビュー判定確認（LGTM: true、未記入項目なし）
+    Assert-ReviewsValid 'Archive'
 }
 
 # --- 結果サマリ ---------------------------------------------------------------

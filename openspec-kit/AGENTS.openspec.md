@@ -83,12 +83,12 @@ L2 / L3 の変更では、コードを書く前に `openspec/templates/test_plan
 
 ドキュメントのルール記述だけに頼らず、各フェーズの終わりに **`openspec/scripts/verify-gate.ps1`** を実行し、機械的チェックを PASS させることを必須とする。
 
-| ゲート     | 実行タイミング                         | 検証コマンド                                                                                                 | 完了基準（DoD / ゲート通過条件）                                                                                                                                                                       |
-| :--------- | :------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gate 0** | `openspec new change` 直前             | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose`                                                  | ・未コミット変更の退避済み<br>・最新 `{{BASE_BRANCH}}` から切った `feature/*` / `fix/*` 等のブランチ上にいること                                                                                       |
-| **Gate 1** | Propose 合意・commit 前                | `openspec validate "<name>"`<br>`pwsh ./openspec/scripts/verify-gate.ps1 -Gate propose -ChangeName "<name>"` | ・規模レベルに応じた必須ファイル（`proposal`, `specs`, `design`, `test_plan`, `tasks`, `mockup`）が揃っていること<br>・`reviews.md` に未判定項目がなく、Propose レビューが `LGTM: true` であること     |
-| **Gate 2** | Apply 各タスクの `[x]` 更新・commit 前 | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate apply -ChangeName "<name>"`                                   | ・フォーマット差分0、静的解析エラー0、全テストPass、C0/C1/C2基準達成<br>・テストの `skip` 放置が 0 件であること<br>・`reviews.md` の最新タスクレビューが `LGTM: true` であること                       |
-| **Gate 3** | `openspec archive` 実行前              | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate archive -ChangeName "<name>"`                                 | ・`tasks.md` の未完了タスク（`- [ ]`）が 0 件であること<br>・`handover.md` が記入済みであること<br>・全4ロール総括レビュー `LGTM: true` かつユーザー最終合意（`- **合意**: あり`）が記録済みであること |
+| ゲート     | 実行タイミング                         | 検証コマンド                                                                                                 | 完了基準（DoD / ゲート通過条件）                                                                                                                                                                   |
+| :--------- | :------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Gate 0** | `openspec new change` 直前             | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose`                                                  | ・未コミット変更の退避済み<br>・最新 `{{BASE_BRANCH}}` から切った `feature/*` / `fix/*` 等のブランチ上にいること                                                                                   |
+| **Gate 1** | Propose 合意・commit 前                | `openspec validate "<name>"`<br>`pwsh ./openspec/scripts/verify-gate.ps1 -Gate propose -ChangeName "<name>"` | ・規模レベルに応じた必須ファイル（`proposal`, `specs`, `design`, `test_plan`, `tasks`, `mockup`）が揃っていること<br>・`reviews.md` に未判定項目がなく、Propose レビューが `LGTM: true` であること |
+| **Gate 2** | Apply 各タスクの `[x]` 更新・commit 前 | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate apply -ChangeName "<name>"`                                   | ・フォーマット差分0、静的解析エラー0、全テストPass、C0/C1/C2基準達成<br>・テストの `skip` 放置が 0 件であること<br>・`reviews.md` の最新タスクレビューが `LGTM: true` であること                   |
+| **Gate 3** | `openspec archive` 実行前              | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate archive -ChangeName "<name>"`                                 | ・`tasks.md` の未完了タスク（`- [ ]`）が 0 件であること<br>・`handover.md` が記入済みであること<br>・全4ロール総括レビュー `LGTM: true` かつ DoD（テスト100%Pass、skip放置0件）を達成していること  |
 
 ---
 
@@ -106,10 +106,14 @@ OpenSpec の成果物（`openspec/` 配下）も Git 管理対象とする。
 #### 1. ブランチ作成（Explore → Propose 移行時の安全シーケンス / Gate 0）
 
 1. **作業ツリー確認と退避**: `git status --porcelain` で未コミット変更を確認し、存在する場合は `git stash push -u -m "wip: backup before switch to <change-name>"` で退避する。
-2. **ベースブランチの最新化とトピックブランチ作成**:
+2. **ベースブランチの最新化とマージ済みブランチ削除・新トピックブランチ作成**:
    ```bash
    git checkout {{BASE_BRANCH}}
    git pull origin {{BASE_BRANCH}}
+   git fetch --prune
+   # マージ済みローカルブランチを一括削除（{{BASE_BRANCH}}, main, master 等は除外保護）
+   # PowerShell: git branch --merged {{BASE_BRANCH}} | Where-Object { $_.Trim() -notmatch '^({{BASE_BRANCH}}|main|master|\*)' } | ForEach-Object { git branch -d $_.Trim() }
+   # Bash: git branch --merged {{BASE_BRANCH}} | grep -vE "^(\*|{{BASE_BRANCH}}|main|master)$" | xargs -r git branch -d
    git checkout -b feature/<change-name>   # fix/<change-name>, refactor/<change-name>, chore/<change-name>
    ```
 3. **Gate 0 検証**: `pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose`
@@ -124,16 +128,16 @@ OpenSpec の成果物（`openspec/` 配下）も Git 管理対象とする。
 
 #### 3. Push / Pull Request / Merge
 
-- **Push**: 作業区切りおよび Archive 完了・ユーザー最終合意後に `git push -u origin <branch>`
-- **PR 作成**: `openspec/templates/pr_body.md` に従い `gh pr create --base {{BASE_BRANCH}} --head <branch> --title "<type>(<scope>): <subject>" --body-file <PR本文ファイル>`
-- **マージ**: **Merge commit**（`gh pr merge <PR番号> --merge --delete-branch`）を採用する（Squash / Rebase merge は禁止）。
+- **Push**: トピックブランチへの push は Archive 完了時の自走タスクとして自動実行する
+- **PR 作成**: `openspec/templates/pr_body.md` に従い `gh pr create --base {{BASE_BRANCH}} --head <branch> --title "<type>(<scope>): <subject>" --body-file <PR本文ファイル>` を自動実行する（ローカルブランチはトピックブランチのままでセッション完了とし、人間レビューは PR 上で実施）
+- **マージ**: 人間によるレビュー承認後、**Merge commit**（`gh pr merge <PR番号> --merge --delete-branch`）で統合する（Squash / Rebase merge は禁止）。
 
 #### 4. 禁止事項（ハードガードレール）
 
 - `{{BASE_BRANCH}}` および `main` への直接コミット・直接 push
 - `verify-gate.ps1` を実行・通過せずに行うフェーズ移行・`[x]` 更新・Archive 実行
 - 既存テストの期待値改ざん・アサーション削除・`skip` 化による見せかけの Green 化
-- ユーザー合意なしでの push および PR マージ
+- **ユーザー承認なしでの PR マージ（ベースブランチへの統合）**
 - テストエビデンス（`{{EVIDENCE_DIR}}`）・カバレッジレポート・秘密情報（`.env` 等）の commit
 
 ---

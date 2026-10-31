@@ -1,4 +1,4 @@
-﻿#Requires -Modules Pester
+#Requires -Modules Pester
 # openspec-kit/scripts/verify-gate.ps1 のテスト（Pester 5+）
 #   実行: Invoke-Pester ./tests/openspec-kit.verify-gate.Tests.ps1 -Output Detailed
 
@@ -107,10 +107,10 @@ Describe 'verify-gate.ps1' {
             Set-ValidProposeFiles $script:ChangeDir
             Set-Content -LiteralPath (Join-Path $script:ChangeDir 'tasks.md') -Value "- [x] 1.1 Red test`n- [x] 1.2 Green impl" -Encoding utf8
             Set-Content -LiteralPath (Join-Path $script:ChangeDir 'handover.md') -Value "# Handover: sample-change`n- Date: 2026-10-29" -Encoding utf8
-            Set-Content -LiteralPath (Join-Path $script:ChangeDir 'reviews.md') -Value "- **LGTM**: true`n- **合意**: あり" -Encoding utf8
+            Set-Content -LiteralPath (Join-Path $script:ChangeDir 'reviews.md') -Value "- **LGTM**: true" -Encoding utf8
         }
 
-        It '全タスク [x]、handover.md 記入済み、LGTM: true、ユーザー合意: あり で PASS' {
+        It '全タスク [x]、handover.md 記入済み、LGTM: true で PASS' {
             $res = Invoke-Gate $script:Root 'archive'
             $res.ExitCode | Should -Be 0
             $res.Output | Should -Match 'PASSED'
@@ -130,11 +130,11 @@ Describe 'verify-gate.ps1' {
             $res.Output | Should -Match 'handover\.md に未記入のプレースホルダ'
         }
 
-        It 'reviews.md にユーザー最終合意（- **合意**: あり）がない場合は FAIL' {
-            Set-Content -LiteralPath (Join-Path $script:ChangeDir 'reviews.md') -Value "- **LGTM**: true`n- **合意**: なし" -Encoding utf8
+        It 'reviews.md の最新総括レビューが LGTM: false の場合は FAIL' {
+            Set-Content -LiteralPath (Join-Path $script:ChangeDir 'reviews.md') -Value "- **LGTM**: true`n- **LGTM**: false" -Encoding utf8
             $res = Invoke-Gate $script:Root 'archive'
             $res.ExitCode | Should -Be 1
-            $res.Output | Should -Match 'ユーザー最終合意'
+            $res.Output | Should -Match 'LGTM: true ではありません'
         }
     }
 }

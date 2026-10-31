@@ -267,14 +267,8 @@ if [[ "$GATE" == "archive" ]]; then
         pass "handover.md 作成・記入確認"
     fi
 
-    REVIEWS_PATH="$CHANGE_DIR/reviews.md"
-    if [[ -f "$REVIEWS_PATH" ]]; then
-        if ! tr -d '\r' < "$REVIEWS_PATH" | grep -Eq '^-[[:space:]]*\*\*合意\*\*:[[:space:]]*あり([[:space:]]|$)'; then
-            fail "reviews.md にユーザー最終合意（'- **合意**: あり'）が記録されていません"
-        else
-            pass "ユーザー最終合意（合意: あり）記録確認"
-        fi
-    fi
+    # 4ロール総括レビュー判定確認（LGTM: true、未記入項目なし）
+    assert_reviews_valid "Archive"
 fi
 
 # --- 結果サマリ ---------------------------------------------------------------

@@ -105,7 +105,7 @@ context: |
 rules:
   # プロポーザル作成時のルール
   proposal:
-    - "Propose開始（openspec new change）直前に Gate 0（作業ツリー確認・stash退避・main最新化・feature/またはfix/ブランチ作成・verify-gate.ps1 -Gate pre-propose）を必ず実行する"
+    - "Propose開始（openspec new change）直前に Gate 0（作業ツリー確認・stash退避・main最新化・マージ済みブランチ一括削除・feature/またはfix/ブランチ作成・verify-gate.ps1 -Gate pre-propose）を必ず実行する"
     - "変更の適用規模レベル（L1 / L2 / L3）と変更種別（feat / fix / refactor）を明記する"
     - "変更の「What & Why」（不具合修正時は根本原因 Root Cause を含む）を簡潔に記述（500語以内推奨）"
     - "Non-goals（やらないこと）と、検証可能な受け入れ基準（Given/When/Then）を含める"
@@ -147,5 +147,5 @@ operations:
       - "全テスト 100% Pass（Skip放置 0件）、C0/C1/C2 カバレッジ基準達成、ビルド・静的解析エラー 0件、フォーマット差分 0件（Definition of Done）を最終確認する"
       - "関連ドキュメント（README等）を同期更新し、handover.md（テンプレート準拠）に変更サマリ・テスト/カバレッジ結果・保留指摘・改善候補を記録する"
       - "Archive前: 全4ロール（user/se/pg/qa-reviewer）による総括レビュー（checklist_archive.md）を実施し、全ロール LGTM を取得する"
-      - "ユーザー最終合意を得て reviews.md に『- **合意**: あり』を記録し、verify-gate.ps1 -Gate archive -ChangeName <name> が PASS することを確認してから openspec archive を実行する"
-      - "Archive完了コミットを push 後（ユーザー合意必須）、gh pr create で main 向け Pull Request（pr_body.md 準拠）を作成し、ユーザー合意後に Merge commit（gh pr merge --merge）で統合する"
+      - "verify-gate.ps1 -Gate archive -ChangeName <name> が PASS することを確認してから openspec archive を実行する"
+      - "アーカイブ完了コミットを作成し、トピックブランチをリモートへ push した後、gh pr create で main 向け Pull Request（pr_body.md 準拠）を自動作成して PR の URL を提示する（ローカルブランチはトピックブランチのままでセッション完了とし、人間レビューは PR 上で実施。ユーザー承認後に gh pr merge --merge で統合する）"

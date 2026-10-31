@@ -4,7 +4,7 @@ description: 全ロール総括レビュー・DoD（完了基準）検証・Gate
 
 # SDD Archive ワークフロー（Definition of Done & Gate 3）
 
-すべての実装・テストタスク完了後、**完了基準（Definition of Done）の最終確認・4ロール総括レビュー・`handover.md` 作成・機械的ゲート検証（Gate 3）・ユーザー最終合意・PR作成** を経て変更を完了させるワークフローです。
+すべての実装・テストタスク完了後、**完了基準（Definition of Done）の最終確認・4ロール総括レビュー・`handover.md` 作成・機械的ゲート検証（Gate 3）・PR自動作成（人間レビューは PR 上で実施）** を経て変更を完了させるワークフローです。
 
 ## ステップ 1: 完了基準（Definition of Done）の最終検証
 
@@ -32,37 +32,42 @@ description: 全ロール総括レビュー・DoD（完了基準）検証・Gate
 
 - 指摘があれば修正し、全ロールが `LGTM: true` になるまで繰り返す（最大 3 サイクル）。
 
-## ステップ 4: ユーザー最終合意と Gate 3 検証
+## ステップ 4: Gate 3 検証（機械的ゲート検証）
 
-1. 変更サマリ・テスト＆カバレッジ結果・`handover.md`・総括レビュー結果をユーザーに提示し、**Archive 実行および PR 作成の最終合意**を得る。
-2. 合意を得たら、`reviews.md` の「ユーザー最終合意」セクションに `- **合意**: あり`・合意者・合意日時を記録する。
-3. **Gate 3 検証スクリプトを実行する**:
-   ```powershell
-   pwsh ./openspec/scripts/verify-gate.ps1 -Gate archive -ChangeName "<change-name>"
-   ```
-   ※ `PASSED` であることを確認してから次へ進む。
+全 4 ロール（User/SE/PG/QA Reviewer）の総括レビューが完了し `LGTM: true` となったことを確認した上で、**Gate 3 検証スクリプトを実行する**:
 
-## ステップ 5: OpenSpec Archive 実行・コミット・PR 作成
+```powershell
+pwsh ./openspec/scripts/verify-gate.ps1 -Gate archive -ChangeName "<change-name>"
+```
+
+※ `PASSED` であることを確認してから次へ進む（Bash 環境の場合は `./openspec/scripts/verify-gate.sh --gate archive --change-name "<change-name>"`）。
+
+## ステップ 5: OpenSpec Archive 実行・コミット・PR 自動作成（自走完走）
+
+Gate 3 通過後、AI は以下のステップを自律的に完走させる:
 
 1. アーカイブを実行する（デルタ仕様が `openspec/specs/` に同期され、`openspec/changes/archive/` へ移動される）:
    ```bash
    openspec archive "<change-name>"
    ```
-2. 自動フォーマットを実行し、アーカイブ結果をコミット＆プッシュする（ユーザー合意済み）:
+2. 自動フォーマットを実行し、アーカイブ結果をコミットする:
    ```bash
    npx prettier --write "openspec/**/*.md"
    git add openspec/ README.md
    git commit -m "chore(<change-name>): archive change and sync specs"
+   ```
+3. トピックブランチをリモートへプッシュする:
+   ```bash
    git push -u origin <current-branch>
    ```
-3. `openspec/templates/pr_body.md` に従って PR 本文を作成し、GitHub CLI で `{{BASE_BRANCH}}` 向け Pull Request を作成する:
+4. `openspec/templates/pr_body.md` に従って PR 本文を作成し、GitHub CLI で `{{BASE_BRANCH}}` 向け Pull Request を自動作成する:
    ```bash
    gh pr create --base {{BASE_BRANCH}} --head <current-branch> --title "<type>(<change-name>): <subject>" --body-file <pr-body-file>
    ```
-4. ユーザーのマージ合意後、**Merge commit**（`--merge`）で統合し、ローカルブランチをクリーンアップする:
-   ```bash
-   gh pr merge <PR番号> --merge --delete-branch
-   git checkout {{BASE_BRANCH}}
-   git pull origin {{BASE_BRANCH}}
-   git branch -d <current-branch>
-   ```
+5. **PR の URL と変更・検証サマリを提示してセッションを完了する**:
+   - ローカルブランチはトピックブランチ（`<current-branch>`）のままで終了する（ローカルで動作確認やコード差分の確認をそのまま行えます）。
+   - 人間による最終レビューと合意は GitHub PR 上で実施し、承認後に **Merge commit**（`--merge`）で統合する。
+     ```bash
+     # 人間承認後のマージ例
+     gh pr merge <PR番号> --merge --delete-branch
+     ```

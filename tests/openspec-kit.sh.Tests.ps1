@@ -1,8 +1,10 @@
-﻿#Requires -Modules Pester
+#Requires -Modules Pester
 # openspec-kit/install.sh および scripts/verify-gate.sh のテスト（Pester 5+）
 #   実行: Invoke-Pester ./tests/openspec-kit.sh.Tests.ps1 -Output Detailed
 
 BeforeAll {
+    $script:PreviousEncoding = [Console]::OutputEncoding
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
     $script:GitBash = if (Test-Path 'C:\Program Files\Git\bin\bash.exe') {
         'C:\Program Files\Git\bin\bash.exe'
     } else {
@@ -144,11 +146,11 @@ Describe 'verify-gate.sh' {
         $res.Output | Should -Match 'Skip / Ignore 状態のテストが放置'
     }
 
-    It 'Gate 3 (archive): 全タスク [x]・handover.md 記入済み・LGTM: true・合意: あり で PASS、未完了タスクがあれば FAIL' {
+    It 'Gate 3 (archive): 全タスク [x]・handover.md 記入済み・LGTM: true で PASS、未完了タスクがあれば FAIL' {
         Set-ValidProposeFiles $script:ChangeDir
         Set-Content -LiteralPath (Join-Path $script:ChangeDir 'tasks.md') -Value "- [x] 1.1 Done`n- [x] 1.2 Done" -Encoding utf8
         Set-Content -LiteralPath (Join-Path $script:ChangeDir 'handover.md') -Value "# Handover: sample-change`n- Date: 2026-10-29" -Encoding utf8
-        Set-Content -LiteralPath (Join-Path $script:ChangeDir 'reviews.md') -Value "- **LGTM**: true`n- **合意**: あり" -Encoding utf8
+        Set-Content -LiteralPath (Join-Path $script:ChangeDir 'reviews.md') -Value "- **LGTM**: true" -Encoding utf8
 
         $passRes = Invoke-Bash $script:GateSh @('--gate', 'archive', '--change-name', 'sample-change', '--target-path', $script:Root.Replace('\', '/'), '--skip-git-check')
         $passRes.ExitCode | Should -Be 0
@@ -157,5 +159,11 @@ Describe 'verify-gate.sh' {
         $failRes = Invoke-Bash $script:GateSh @('--gate', 'archive', '--change-name', 'sample-change', '--target-path', $script:Root.Replace('\', '/'), '--skip-git-check')
         $failRes.ExitCode | Should -Be 1
         $failRes.Output | Should -Match '未完了タスク'
+    }
+
+    AfterAll {
+        if ($null -ne $script:PreviousEncoding) {
+            [Console]::OutputEncoding = $script:PreviousEncoding
+        }
     }
 }
