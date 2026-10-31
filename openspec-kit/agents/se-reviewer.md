@@ -40,6 +40,5 @@ role: SE Reviewer Agent (Fault Simulation / Architecture Resilience / Technical 
 
 ## レビュー出力ルール
 
-- `openspec/templates/review_record.md` の新フォーマットに完全準拠して出力する。
-- 旧来のチェックリスト表（`✅/❌/⚠️`）は出力しない。
+- `openspec/templates/review_record.md` のフォーマットに完全準拠して出力する。
 - 致命的な連鎖崩壊リスクやデータ不整合の懸念がある場合は必ず **`LGTM: false`** とする。

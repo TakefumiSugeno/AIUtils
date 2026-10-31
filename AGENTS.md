@@ -63,7 +63,7 @@
 | `openspec/templates/`              | テスト計画・レビュー記録・チェックリスト・handover・PR 本文テンプレート                               |
 | `openspec/scripts/verify-gate.ps1` | フェーズゲート（Gate 0〜3 / DoD）の機械的検証スクリプト                                               |
 | `.agents/workflows/sdd-*.md`       | ゲート・サブエージェント分業を組み込んだ実行ワークフロー（`sdd-propose`, `sdd-apply`, `sdd-archive`） |
-| `test-results/`                    | テストエビデンス・カバレッジレポート出力先（Git 管理外）                                              |
+| `test-results/`                 | テストエビデンス・カバレッジレポート出力先（Git 管理外）                                              |
 
 ### 適用規模レベル（L1 / L2 / L3）と変更ディレクトリの成果物
 
@@ -97,7 +97,7 @@
 #### レビュー・エスカレーション規律
 
 1. **独立コンテキスト**: 実装者自身のバイアスを排除するため、必ずサブエージェント（別会話コンテキスト）に対象成果物・`git diff`・チェックリストのパスを渡して実行する。
-2. **挑戦的設問回答と破壊テスト実行**: 旧来の表形式チェック（`✅/❌/⚠️`）を廃止し、各成果物の挑戦的設問への具体的回答・根拠、および実装コードを例外終了させる破壊テスト実行ログ（Adversarial QA）を `openspec/changes/<name>/reviews.md` に追記する。フォーマット・静的解析・テスト合否・カバレッジ数値等の機械的検証は `verify-gate.ps1` に委譲し LLM レビューから除外する。
+2. **挑戦的設問回答と破壊テスト実行**: 各成果物の挑戦的設問への具体的回答・根拠、および実装コードを例外終了させる破壊テスト実行ログ（Adversarial QA）を `openspec/changes/<name>/reviews.md` に追記する。フォーマット・静的解析・テスト合否・カバレッジ数値等の機械的検証は `verify-gate.ps1` に委譲し LLM レビューから除外する。
 3. **最大3サイクルとエスカレーション**: `Critical` / `Major` 指摘（破壊テストによるバグ検出含む）が 0 件（`LGTM: true`）になるまで修正・再レビューを繰り返す。**最大 3 サイクル**で解消しない場合は、AI の独断で妥協せずユーザーへエスカレーションする。
 4. **保留指摘の引き継ぎ**: `Minor` / `Suggestion` で保留とした指摘は `reviews.md` に記録し、Archive 時に `handover.md` へ全件転記する。
 
@@ -129,7 +129,7 @@ L2 / L3 の変更では、コードを書く前に `openspec/templates/test_plan
 
 | ゲート     | 実行タイミング                         | 検証コマンド                                                                                                 | 完了基準（DoD / ゲート通過条件）                                                                                                                                                                   |
 | :--------- | :------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gate 0** | `openspec new change` 直前             | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose`                                                  | ・未コミット変更の退避済み<br>・最新 `main` から切った `feature/*` / `fix/*` 等のブランチ上にいること                                                                                              |
+| **Gate 0** | `openspec new change` 直前             | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate pre-propose`                                                  | ・未コミット変更の退避済み<br>・最新 `main` から切った `feature/*` / `fix/*` 等のブランチ上にいること                                                                                   |
 | **Gate 1** | Propose 合意・commit 前                | `openspec validate "<name>"`<br>`pwsh ./openspec/scripts/verify-gate.ps1 -Gate propose -ChangeName "<name>"` | ・規模レベルに応じた必須ファイル（`proposal`, `specs`, `design`, `test_plan`, `tasks`, `mockup`）が揃っていること<br>・`reviews.md` に未判定項目がなく、Propose レビューが `LGTM: true` であること |
 | **Gate 2** | Apply 各タスクの `[x]` 更新・commit 前 | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate apply -ChangeName "<name>"`                                   | ・フォーマット差分0、静的解析エラー0、全テストPass、C0/C1/C2基準達成<br>・テストの `skip` 放置が 0 件であること<br>・`reviews.md` の最新タスクレビューが `LGTM: true` であること                   |
 | **Gate 3** | `openspec archive` 実行前              | `pwsh ./openspec/scripts/verify-gate.ps1 -Gate archive -ChangeName "<name>"`                                 | ・`tasks.md` の未完了タスク（`- [ ]`）が 0 件であること<br>・`handover.md` が記入済みであること<br>・全4ロール総括レビュー `LGTM: true` かつ DoD（テスト100%Pass、skip放置0件）を達成していること  |

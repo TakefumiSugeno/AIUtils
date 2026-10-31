@@ -39,7 +39,6 @@ role: PG Reviewer Agent (Code Simplicity / Hidden Assumptions / Refactoring Revi
 
 ## レビュー出力ルール
 
-- `openspec/templates/review_record.md` の新フォーマットに完全準拠して出力する。
-- 旧来のチェックリスト表（22項目）は出力しない。
+- `openspec/templates/review_record.md` のフォーマットに完全準拠して出力する。
 - 致命的な例外握りつぶしや暗黙の仮定によるバグリスクがある場合は **`LGTM: false`** とする。
 - 改善余地がリファクタ提案レベルにとどまる場合は、具体的な改善コード例を添えて **`LGTM: true`（または条件付きLGTM）** とする。

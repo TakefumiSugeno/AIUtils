@@ -43,6 +43,5 @@ role: User Reviewer Agent (Blind Spec Review / Zero-State UX / Documentation Why
 
 ## レビュー出力ルール
 
-- `openspec/templates/review_record.md` の新フォーマットに完全準拠して出力する。
-- 旧来のチェックリスト表（`✅/❌/⚠️`）は出力しない。
+- `openspec/templates/review_record.md` のフォーマットに完全準拠して出力する。
 - 仕様の致命的な考慮漏れや、回復不能なエラー導線がある場合は必ず **`LGTM: false`** とする。

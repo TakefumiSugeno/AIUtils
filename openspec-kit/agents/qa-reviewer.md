@@ -43,7 +43,6 @@ role: QA Reviewer Agent (Adversarial QA / Mutation / Anti-Tautology Review)
 
 ## レビュー出力ルール
 
-- `openspec/templates/review_record.md` の新フォーマットに完全準拠して出力する。
-- 旧来のチェックリスト表（`✅/❌/⚠️`）は出力しない。
+- `openspec/templates/review_record.md` のフォーマットに完全準拠して出力する。
 - 破壊テストの実行コマンドおよび実行ログ（標準出力・例外）を必ず記載する。
 - バグ検出時は必ず **`LGTM: false`** とする。
