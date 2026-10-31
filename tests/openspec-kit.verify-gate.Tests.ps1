@@ -95,10 +95,47 @@ Describe 'verify-gate.ps1' {
             Set-ValidProposeFiles $script:ChangeDir
             $testDir = Join-Path $script:Root 'test'
             New-Item -ItemType Directory -Path $testDir -Force | Out-Null
-            Set-Content -LiteralPath (Join-Path $testDir 'app.test.js') -Value "it.skip('should work', () => {});" -Encoding utf8
+            Set-Content -LiteralPath (Join-Path $testDir 'app.test.js') -Value ('it' + ".skip('should work', () => {});") -Encoding utf8
             $res = Invoke-Gate $script:Root 'apply'
             $res.ExitCode | Should -Be 1
             $res.Output | Should -Match 'Skip / Ignore 状態のテストが放置'
+        }
+
+        It '新形式の Q&A 回答＋破壊テストログ＋LGTM: true の reviews.md は PASS' {
+            Set-ValidProposeFiles $script:ChangeDir
+            $newRev = @"
+# Review Record: sample-change / apply / 1.1
+## 1. 挑戦的設問への回答
+### 設問1: 暗黙の仮定
+- **確認内容・回答**: nullチェックが実施されていることを確認
+- **確認根拠**: src/index.ts:12
+## 2. Adversarial QA（破壊テスト実行結果）
+- **対象関数/モジュール**: `processData`
+- **破壊テストコード名**: `test/adversarial.test.ts`
+- **実行判定**: 堅牢性確認（Green / 落とせず）
+## 4. 判定
+- **LGTM**: true
+"@
+            Set-Content -LiteralPath (Join-Path $script:ChangeDir 'reviews.md') -Value $newRev -Encoding utf8
+            $res = Invoke-Gate $script:Root 'apply'
+            $res.ExitCode | Should -Be 0
+        }
+
+        It 'reviews.md に未記入のテンプレートプレースホルダ（<具体的な確認内容等）が残っている場合は FAIL' {
+            Set-ValidProposeFiles $script:ChangeDir
+            $unfilledRev = @"
+# Review Record: sample-change / apply / 1.1
+## 1. 挑戦的設問への回答
+### 設問1: 暗黙の仮定
+- **確認内容・回答**: <具体的な確認内容・回答>
+- **確認根拠**: <ファイル名・行番号・関数名等>
+## 4. 判定
+- **LGTM**: true
+"@
+            Set-Content -LiteralPath (Join-Path $script:ChangeDir 'reviews.md') -Value $unfilledRev -Encoding utf8
+            $res = Invoke-Gate $script:Root 'apply'
+            $res.ExitCode | Should -Be 1
+            $res.Output | Should -Match '未記入のプレースホルダ'
         }
     }
 

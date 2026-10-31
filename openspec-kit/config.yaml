@@ -26,19 +26,19 @@ reviews:
       phases: [apply]
     - name: user-reviewer
       file: "openspec/agents/user-reviewer.md"
-      perspective: "要件・ビジネス価値・UX導線・空状態/異常時体験・UIモック・受け入れ基準の批判的レビュー"
+      perspective: "ブラインド仕様比較（異常系・境界条件の先出し突合）・せっかち初心者視点でのZero-State/Error-State体験・ドキュメントWhy欠落の批判的レビュー"
       phases: [propose, archive]
     - name: se-reviewer
       file: "openspec/agents/se-reviewer.md"
-      perspective: "アーキテクチャ・責務分離・データ整合性・影響範囲・非機能要件の批判的レビュー"
+      perspective: "外部依存ハング・通信瞬断時の故障シミュレーション（連鎖崩壊追及）・状態不整合・可観測性・隠された技術的負債の批判的レビュー"
       phases: [propose, apply, archive]
     - name: pg-reviewer
       file: "openspec/agents/pg-reviewer.md"
-      perspective: "コード品質・可読性・境界値・エラー処理・テスト改ざん/ハリボテ実装有無の批判的レビュー"
+      perspective: "コード潔癖症視点で暗黙の仮定（思い込み）・例外握りつぶしを告発し、過剰な抽象化を削る30%コード削減リファクタを提案する批判的レビュー"
       phases: [apply, archive]
     - name: qa-reviewer
       file: "openspec/agents/qa-reviewer.md"
-      perspective: "C0/C1/C2カバレッジ・境界値/同値分割・結合/E2E網羅性・モック規律・エビデンスの批判的レビュー"
+      perspective: "敵対的QAとして対象コードを例外終了させる破壊テストの作成・実行（Adversarial QA）、テストコードのトートロジー（実装式コピペ）・甘いアサーションの批判的レビュー"
       phases: [apply, archive]
 
   gate_script: "openspec/scripts/verify-gate.ps1"
@@ -129,7 +129,10 @@ operations:
   apply:
     guidance:
       - "作業開始前に verify-gate.ps1 -Gate propose -ChangeName <name> が PASS していることを確認する"
-      - "L2/L3 では TDD 3権分立を実践する: ① qa-tester サブエージェントが Red テストを先行作成し失敗を確認 → ② pg-implementer サブエージェントがテストを改ざんせずに Green 実装＆Refactor → ③ pg-reviewer / qa-reviewer サブエージェントが批判的レビュー"
+      - "フォーマット差分・静的解析エラー・既存テスト合否・skip放置等の機械的検証は verify-gate.ps1 に委譲し、LLMレビューから除外する"
+      - "L2/L3 では TDD 3権分立を実践する: ① qa-tester サブエージェントが Red テストを先行作成し失敗を確認 → ② pg-implementer サブエージェントがテストを改ざんせずに Green 実装＆Refactor → ③ pg-reviewer / qa-reviewer サブエージェントが挑戦的レビュー（破壊テスト実行・悪魔の代弁者）"
+      - "実装コードレビューは、Adversarial QA（例外を吐かせる破壊テストの作成・実行による客観的判定）および30%コード削減リファクタ提案により実施する（非コードタスクはスキップ可）"
+      - "テストコードレビューは、トートロジーアサーション（実装式のコピペ）および甘いアサーション・無意味なモックの告発により実施する"
       - "単体テストは test_plan.md の境界値・デシジョンテーブルを全て実装し、C0（80%+/差分90%+）・C1（80%+/差分85%+）・C2（100%）を満たすことを確認する"
       - "結合/E2Eテストは仕様の全 Scenario（Happy / Zero-State / Recovery Path）を検証し、GUI/Web は実画面キャプチャ（PNG）を出力して mockup.html との整合を確認する"
       - "実装中に既存のテストが落ちた場合、テストの期待値やアサーションを勝手に書き換えて通すこと（テスト改ざん）や skip 化を厳禁とする"
@@ -139,8 +142,8 @@ operations:
 
   archive:
     guidance:
-      - "全テスト 100% Pass（Skip放置 0件）、C0/C1/C2 カバレッジ基準達成、ビルド・静的解析エラー 0件、フォーマット差分 0件（Definition of Done）を最終確認する"
+      - "全テスト 100% Pass（Skip放置 0件）、C0/C1/C2 カバレッジ基準達成、ビルド・静的解析エラー 0件、フォーマット差分 0件（Definition of Done）を verify-gate.ps1 -Gate archive で最終確認する"
       - "関連ドキュメント（README等）を同期更新し、handover.md（テンプレート準拠）に変更サマリ・テスト/カバレッジ結果・保留指摘・改善候補を記録する"
-      - "Archive前: 全4ロール（user/se/pg/qa-reviewer）による総括レビュー（checklist_archive.md）を実施し、全ロール LGTM を取得する"
+      - "Archive前: 全4ロール（user/se/pg/qa-reviewer）による総括レビュー（checklist_archive.md: 隠された技術的負債の自白・初見エンジニア視点のWhy検証）を実施し、全ロール LGTM を取得する"
       - "verify-gate.ps1 -Gate archive -ChangeName <name> が PASS することを確認してから openspec archive を実行する"
       - "アーカイブ完了コミットを作成し、トピックブランチをリモートへ push した後、gh pr create で {{BASE_BRANCH}} 向け Pull Request（pr_body.md 準拠）を自動作成して PR の URL を提示する（ローカルブランチはトピックブランチのままでセッション完了とし、人間レビューは PR 上で実施。ユーザー承認後に gh pr merge --merge で統合する）"

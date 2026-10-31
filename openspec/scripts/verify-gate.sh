@@ -151,8 +151,10 @@ assert_reviews_valid() {
     fi
     if grep -Fq "✅/❌/⚠️" "$reviews_path"; then
         fail "reviews.md に未判定のチェックリスト項目（'✅/❌/⚠️'）が残っています"
+    elif grep -E -q '(:[[:space:]]*|-[[:space:]]*)<(具体的な確認内容|ファイル名|テスト名|実行したコマンド|未記入|指摘内容|対応方針の理由)[^>]*>' "$reviews_path"; then
+        fail "reviews.md に未記入のプレースホルダ（'<...>'）が残っています"
     else
-        pass "reviews.md の全チェック項目が判定済み"
+        pass "reviews.md の全レビュー設問・確認項目が記入済み"
     fi
 
     local last_lgtm
@@ -232,7 +234,7 @@ if [[ "$GATE" == "apply" || "$GATE" == "archive" ]]; then
                 REL="${f#"$ROOT"/}"
                 SKIPPED_FILES+=("$REL")
             fi
-        done < <(find "$td" -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.fs' -o -name '*.cs' -o -name '*.py' -o -name '*.ps1' -o -name '*.sh' \) -print0)
+        done < <(find "$td" -type d \( -name 'node_modules' -o -name 'bin' -o -name 'obj' -o -name 'TestResults' -o -name '.git' \) -prune -o -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.fs' -o -name '*.cs' -o -name '*.py' -o -name '*.ps1' -o -name '*.sh' \) -print0)
     done
 
     if [[ "${#SKIPPED_FILES[@]}" -gt 0 ]]; then

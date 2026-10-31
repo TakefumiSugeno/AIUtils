@@ -85,20 +85,20 @@
 
 同一エージェントがテストと実装の両方を担当すると「実装に合わせた甘いテスト」や「テストの期待値改ざん」が起きるため、以下の6ロール（定義: `openspec/agents/*.md`）を別コンテキストのサブエージェントとして起動する。
 
-| ロール             | 定義ファイル                        | 担当フェーズ      | 責務・ガードレール                                                                                                      |
-| ------------------ | ----------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **QA Tester**      | `openspec/agents/qa-tester.md`      | Propose / Apply   | `specs/` と `test_plan.md` から先行失敗テスト（Red）および結合/E2Eテストを実装。**プロダクションコード編集禁止**        |
-| **PG Implementer** | `openspec/agents/pg-implementer.md` | Apply             | Red テストを通すプロダクションコード実装（Green）と Refactor。**既存テストの無断改ざん・skip化・TODO放置禁止**          |
-| **User Reviewer**  | `openspec/agents/user-reviewer.md`  | Propose / Archive | 要件妥当性・UX導線・ゼロ状態/異常時体験・`mockup.html` 忠実性の批判的レビュー（`checklist_propose/archive.md`）         |
-| **SE Reviewer**    | `openspec/agents/se-reviewer.md`    | 全フェーズ        | アーキテクチャ・責務分離・データ整合・非機能・タスク分解の批判的レビュー（`checklist_propose/apply_impl/archive.md`）   |
-| **PG Reviewer**    | `openspec/agents/pg-reviewer.md`    | Apply / Archive   | コード品質・境界値・エラー処理・テスト改ざん/ハリボテ実装有無の批判的レビュー（`checklist_apply_impl/archive.md`）      |
-| **QA Reviewer**    | `openspec/agents/qa-reviewer.md`    | Apply / Archive   | C0/C1/C2網羅率・境界値・結合/E2E網羅・モック規律・実画面エビデンスの批判的レビュー（`checklist_apply_test/archive.md`） |
+| ロール             | 定義ファイル                        | 担当フェーズ      | 責務・ガードレール                                                                                                                            |
+| ------------------ | ----------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **QA Tester**      | `openspec/agents/qa-tester.md`      | Propose / Apply   | `specs/` と `test_plan.md` から先行失敗テスト（Red）および結合/E2Eテストを実装。**プロダクションコード編集禁止**                              |
+| **PG Implementer** | `openspec/agents/pg-implementer.md` | Apply             | Red テストを通すプロダクションコード実装（Green）と Refactor。**既存テストの無断改ざん・skip化・TODO放置禁止**                                |
+| **User Reviewer**  | `openspec/agents/user-reviewer.md`  | Propose / Archive | ブラインド仕様比較（異常系・境界先出し突合）・せっかち初心者視点でのZero-State/Error-State体験・Why欠落告発（`checklist_propose/archive.md`） |
+| **SE Reviewer**    | `openspec/agents/se-reviewer.md`    | 全フェーズ        | 外部依存ハング・通信瞬断時の故障シミュレーション（連鎖崩壊検証）・状態不整合・隠された負債告発（`checklist_propose/apply_impl/archive.md`）   |
+| **PG Reviewer**    | `openspec/agents/pg-reviewer.md`    | Apply / Archive   | コード潔癖症視点で暗黙の仮定（思い込み）・例外握りつぶし告発・30%削減リファクタ提案（`checklist_apply_impl/archive.md`）                      |
+| **QA Reviewer**    | `openspec/agents/qa-reviewer.md`    | Apply / Archive   | 敵対的QAとして破壊テスト作成・実行（Adversarial QA）・トートロジー（実装式コピペ）・甘いアサーション告発（`checklist_apply_test/archive.md`） |
 
 #### レビュー・エスカレーション規律
 
 1. **独立コンテキスト**: 実装者自身のバイアスを排除するため、必ずサブエージェント（別会話コンテキスト）に対象成果物・`git diff`・チェックリストのパスを渡して実行する。
-2. **全項目判定と根拠記載**: チェックリストの全項目に `✅` / `❌` / `⚠️` と具体的な確認根拠（ファイル名・行番号・計測値）を記入し、`openspec/changes/<name>/reviews.md` に追記する。
-3. **最大3サイクルとエスカレーション**: `Critical` / `Major` 指摘が 0 件（`LGTM: true`）になるまで修正・再レビューを繰り返す。**最大 3 サイクル**で解消しない場合は、AI の独断で妥協せずユーザーへエスカレーションする。
+2. **挑戦的設問回答と破壊テスト実行**: 旧来の表形式チェック（`✅/❌/⚠️`）を廃止し、各成果物の挑戦的設問への具体的回答・根拠、および実装コードを例外終了させる破壊テスト実行ログ（Adversarial QA）を `openspec/changes/<name>/reviews.md` に追記する。フォーマット・静的解析・テスト合否・カバレッジ数値等の機械的検証は `verify-gate.ps1` に委譲し LLM レビューから除外する。
+3. **最大3サイクルとエスカレーション**: `Critical` / `Major` 指摘（破壊テストによるバグ検出含む）が 0 件（`LGTM: true`）になるまで修正・再レビューを繰り返す。**最大 3 サイクル**で解消しない場合は、AI の独断で妥協せずユーザーへエスカレーションする。
 4. **保留指摘の引き継ぎ**: `Minor` / `Suggestion` で保留とした指摘は `reviews.md` に記録し、Archive 時に `handover.md` へ全件転記する。
 
 ---

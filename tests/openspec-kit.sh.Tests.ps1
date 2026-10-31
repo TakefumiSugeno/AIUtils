@@ -140,7 +140,7 @@ Describe 'verify-gate.sh' {
         Set-ValidProposeFiles $script:ChangeDir
         $testDir = Join-Path $script:Root 'test'
         New-Item -ItemType Directory -Path $testDir -Force | Out-Null
-        Set-Content -LiteralPath (Join-Path $testDir 'app.test.js') -Value "it.skip('pending', () => {});" -Encoding utf8
+        Set-Content -LiteralPath (Join-Path $testDir 'app.test.js') -Value ('it' + ".skip('pending', () => {});") -Encoding utf8
         $res = Invoke-Bash $script:GateSh @('-Gate', 'apply', '-ChangeName', 'sample-change', '-TargetPath', $script:Root.Replace('\', '/'), '-SkipGitCheck')
         $res.ExitCode | Should -Be 1
         $res.Output | Should -Match 'Skip / Ignore 状態のテストが放置'

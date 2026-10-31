@@ -151,11 +151,17 @@ function Assert-ReviewsValid([string]$PhaseLabel) {
         return
     }
     $rev = Read-Utf8 $reviewsPath
+
+    # 旧表形式の未判定記号検査
     if ($rev.Contains('✅/❌/⚠️')) {
         Fail "reviews.md に未判定のチェックリスト項目（'✅/❌/⚠️'）が残っています"
     }
+    # 新設問・破壊テストテンプレートの未記入プレースホルダ検査
+    elseif ($rev -match '(?m)(:\s*|-\s*)<(具体的な確認内容|ファイル名|テスト名|実行したコマンド|未記入|指摘内容|対応方針の理由)[^>]*>') {
+        Fail "reviews.md に未記入のプレースホルダ（'<...>'）が残っています"
+    }
     else {
-        Pass "reviews.md の全チェック項目が判定済み"
+        Pass "reviews.md の全レビュー設問・確認項目が記入済み"
     }
 
     $lgtmMatches = [regex]::Matches($rev, '(?im)^-\s*\*\*LGTM\*\*:\s*(true|false)\b')
@@ -242,11 +248,12 @@ if ($Gate -in @('apply', 'archive')) {
         Assert-ReviewsValid 'Apply'
     }
 
-    # テストファイル内の skip / pending 放置検査（対象プロジェクト内の test* / spec* を走査）
+    # テストファイル内の skip / pending 放置検査（対象プロジェクト内の test* / spec* を走査。node_modules/bin/obj等は除外）
     $testDirs = @('test', 'tests') | ForEach-Object { Join-Path $root $_ } | Where-Object { Test-Path -LiteralPath $_ }
     $skippedFound = New-Object System.Collections.Generic.List[string]
     foreach ($td in $testDirs) {
-        $files = Get-ChildItem -LiteralPath $td -Recurse -File -Include '*.ts', '*.tsx', '*.js', '*.mjs', '*.cjs', '*.fs', '*.cs', '*.py', '*.ps1' -ErrorAction SilentlyContinue
+        $files = Get-ChildItem -LiteralPath $td -Recurse -File -Include '*.ts', '*.tsx', '*.js', '*.mjs', '*.cjs', '*.fs', '*.cs', '*.py', '*.ps1' -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -notmatch '[\\/](node_modules|bin|obj|TestResults|\.git)[\\/]' }
         foreach ($f in $files) {
             $content = Read-Utf8 $f.FullName
             if ($content -match '\b(it|test|describe)\.skip\s*\(' -or
