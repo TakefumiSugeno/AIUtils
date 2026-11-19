@@ -5,7 +5,7 @@ schema: spec-driven
 #   - ベースブランチ名のプレースホルダは install.ps1 の -BaseBranch で置換されます（既定: develop）
 #   - 「TODO」コメント箇所はプロジェクトに合わせて記入してください
 #   - `reviews:` は OpenSpec CLI では解釈されない独自キー（機械可読メタデータ）です。
-#     エージェントへの伝達は context / rules / operations と AGENTS.md / workflows で行います。
+#     エージェントへの伝達は context / rules / operations と AGENTS.md / skills で行います。
 # ---------------------------------------------------------------------------
 
 reviews:
@@ -42,10 +42,10 @@ reviews:
       phases: [apply, archive]
 
   gate_script: "openspec/scripts/verify-gate.ps1"
-  workflows:
-    propose: ".agents/workflows/sdd-propose.md"
-    apply: ".agents/workflows/sdd-apply.md"
-    archive: ".agents/workflows/sdd-archive.md"
+  skills:
+    propose: ".agents/skills/sdd-propose/SKILL.md"
+    apply: ".agents/skills/sdd-apply/SKILL.md"
+    archive: ".agents/skills/sdd-archive/SKILL.md"
 
   templates:
     review_record: "openspec/templates/review_record.md"

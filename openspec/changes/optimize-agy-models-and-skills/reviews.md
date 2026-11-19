@@ -208,3 +208,71 @@ Invoke-Pester ./tests: Tests Passed: 56, Failed: 0, Skipped: 0
 - **LGTM**: true
 - **保留指摘（申し送り）**: なし
 - **次のアクション**: Gate 2 通過後、Task 1.1〜1.3 を完了とし Group 2 へ進む
+
+---
+
+## Group 2 Apply レビュー Cycle 1: Task 2.4 (PG Reviewer / QA Reviewer)
+
+- **日時**: 2026-11-20
+- **フェーズ**: apply
+- **タスク**: Task 2.4（Group 2: `openspec-kit/skills/**`, `AGENTS.openspec.md`, `config.yaml`, `README.md`, `tests/openspec-kit.agents-skills.Tests.ps1`）
+- **レビュアー**: pg (`openspec/agents/pg-reviewer.md`) & qa (`openspec/agents/qa-reviewer.md`)
+- **使用プロトコル**: `openspec/templates/checklist_apply_impl.md`, `openspec/templates/checklist_apply_test.md`
+- **対象成果物**: `openspec-kit/skills/**`, `openspec-kit/AGENTS.openspec.md`, `openspec-kit/config.yaml`, `openspec-kit/README.md`, `tests/openspec-kit.agents-skills.Tests.ps1`
+
+### 1. 挑戦的設問・Adversarial QA 要約
+
+- **PG Reviewer**: `run_propose_review.py` / `run_archive_review.py` にて `args` 未指定・空文字時に `"<change-name>"` へサイレントフォールバックする欠陥および空白/パストラバーサル（`"../foo"`）無検証を指摘（Major）。また冗長な辞書定義と `phase` 分岐を `ROLES` タプル＋定数＋`contextlib.nullcontext` に整理して約35%削減するリファクタ案（Minor）および `sdd-propose/SKILL.md` ステップ 4 の L1 条件明記（Suggestion）を提示。
+- **QA Reviewer（破壊テスト実行）**: `adv_test_scripts.py` と `mut_test.ps1` により、`{"change_name": "   "}` や `{"change_name": "../evil"}` で不正パスのプロンプトが生成されてサブエージェントが起動してしまうバグを実証（**バグ検出 / Red**）。また `UT-17` の `in_parallel` / `in_phase` 未アサート、`UT-16` の否定文（「のみではなく」）すり抜け、`UT-26` の「移行」1語による免除穴、`UT-12` の BOM 不在アサーション欠落を指摘。
+
+### 2. 指摘事項・対応（Cycle 1）
+
+- **PG 指摘1 & QA 指摘1 [Major]**: `run_*_review.py` の `callable` ガード強化、`_resolve_change_name()` の `"<change-name>"` サイレントフォールバック廃止、`^[A-Za-z0-9][A-Za-z0-9._-]*$` ホワイトリストによる `ValueError` 即時拒否 → **採用（`pg-implementer` により修正済み）**
+- **PG 指摘2 [Minor] & 指摘3 [Suggestion]**: `run_*_review.py` の約35〜41%コード削減リファクタおよび `sdd-propose/SKILL.md` L1 条件明記 → **採用（`pg-implementer` により修正済み）**
+- **QA 指摘2 & 3 [Major] & 指摘4 [Minor]**: `UT-17` の `in_parallel` / `in_phase` アサートおよび不正 `args` 7パターン `ValueError` 拒否テスト追加、`UT-16` の否定反転拒否、`UT-26` の `config.yaml` 非コメント無条件禁止・`README.md` 肯定文脈拒否、`UT-12` の UTF-8 BOM 不在アサート、`UT-01` の相対リンク `..` 禁止 → **採用（`qa-tester` により修正済み）**
+
+### 3. 判定
+
+- **LGTM**: false
+- **次のアクション**: 修正後 Cycle 2 再レビューへ
+
+---
+
+## Group 2 Apply 再レビュー Cycle 2: Task 2.4 (PG Reviewer / QA Reviewer)
+
+- **日時**: 2026-11-20
+- **フェーズ**: apply
+- **タスク**: Task 2.4（Group 2 Cycle 2 再レビュー）
+- **レビュアー**: pg & qa
+- **使用プロトコル**: `openspec/templates/checklist_apply_impl.md`, `openspec/templates/checklist_apply_test.md`
+- **対象成果物**: `openspec-kit/skills/**`, `openspec-kit/AGENTS.openspec.md`, `openspec-kit/config.yaml`, `openspec-kit/README.md`, `tests/openspec-kit.agents-skills.Tests.ps1`
+
+### 1. 挑戦的設問への回答
+
+- **PG Reviewer**: `run_propose_review.py`（91行→65行）および `run_archive_review.py`（103行→67行）の `callable` ガード、`fullmatch` による Fail-Fast `ValueError` 送出、`nullcontext` による重複排除、および `sdd-propose/SKILL.md` の L1/L2/L3 条件整合を確認。
+- **QA Reviewer**: 2スクリプト×16ケース＝32ケースの敵対的破壊テストおよび `UT-16` / `UT-26` ミューテーション再注入テストを実行し、全異常入力が `agents=0` で拒否され、全ミューテーションが確実に検出されることを確認。
+
+### 2. Adversarial QA（破壊テスト実行結果）
+
+- **対象関数/モジュール**: `run_propose_review.py`, `run_archive_review.py`, `tests/openspec-kit.agents-skills.Tests.ps1`
+- **破壊テストコード名**: 一時スクラッチ `adv_test_cycle2.py`（32ケース）および `mut_test_cycle2.ps1`（検証後に削除済み）
+- **実行コマンド**: `python "<scratch>/adv_test_cycle2.py"`、`pwsh -NoProfile -File "<scratch>/mut_test_cycle2.ps1"`、および `Invoke-Pester ./tests/openspec-kit.agents-skills.Tests.ps1`
+- **実行判定**: 堅牢性確認（Green / 落とせず、全 54 テスト Pass / 全体 96 テスト Pass）
+- **実行ログ要約**:
+
+```text
+propose/archive 16 adversarial cases each (missing, none, empty, whitespace, ../evil, .hidden, -flag, foo/bar, foo\bar, newline, int, non-callable): all rejected with ValueError or exit 2 (agents=0)
+UT-26 Mut1/Mut2: violations=1 (detected) | Valid retirement note: violations=0
+UT-16 Mut1/Mut2: pass=False (detected) | Valid single writer: pass=True
+Invoke-Pester ./tests/openspec-kit.agents-skills.Tests.ps1: Tests Passed: 54, Failed: 0, Skipped: 0
+```
+
+### 3. 指摘事項
+
+なし（理由: Cycle 1 の全指摘が解消され、破壊テスト32ケースおよびミューテーション検証で堅牢性を確認済み）
+
+### 4. 判定
+
+- **LGTM**: true
+- **保留指摘（申し送り）**: なし
+- **次のアクション**: Gate 2 通過後、Task 2.1〜2.4 を完了とし Group 3 へ進む

@@ -8,10 +8,10 @@
 
 ## 2. 5エージェント共通 Skills 化と `AGENTS.openspec.md` スリム化（`workflows/` は Group 3 まで維持）
 
-- [ ] 2.1 `qa-tester` による先行 Red テスト作成: `openspec-kit/skills/sdd-{propose,apply,archive}` の自己完結構造・`sdd-*` 名前空間非衝突（`UT-01`, `UT-02`）、`references/` 要件・障害回復手順（`UT-16`, `UT-18`, `UT-20`, `IT-05`）、`scripts/*.py` AST・スタブ実行・直接 `python3` ガード `exit 2`（`UT-17`, `UT-21`）、`AGENTS.openspec.md` < 12,000B・合算 `<= 16,000B`（`UT-12`）、および `config.yaml`/`README.md` 旧参照除去（`UT-26`）のテストを追加し、失敗（Red）を確認する
-- [ ] 2.2 `pg-implementer` によるスキル群作成: `openspec-kit/skills/sdd-{propose,apply,archive}/SKILL.md`、各スキル自己完結 `references/{antigravity-orchestration.md,sdd-reference.md}`、および `scripts/run_{propose,archive}_review.py`（直接実行ガード付き）を作成し、スキル構造・Python スクリプトテスト（`UT-01`, `UT-02`, `UT-16`〜`UT-21`, `IT-05`）の Green を確認する
-- [ ] 2.3 `pg-implementer` による `AGENTS.openspec.md` スリム化・設定更新: `openspec-kit/AGENTS.openspec.md` を 12,000 バイト未満へ圧縮し、`openspec-kit/config.yaml` および `openspec-kit/README.md` のワークフロー参照を `.agents/skills/sdd-*` へ更新して、`UT-12`・`UT-26` を含む Group 2 テスト全件の Green を確認する
-- [ ] 2.4 Group 2 レビュー & Gate 2 検証: `pg-reviewer` / `qa-reviewer` によるレビューを実施して `reviews.md` に記録（`LGTM: true`）し、`verify-gate.ps1 -Gate apply` が `PASSED` になることを確認する（この時点では既存 `workflows/` テストも維持される）
+- [x] 2.1 `qa-tester` による先行 Red テスト作成: `openspec-kit/skills/sdd-{propose,apply,archive}` の自己完結構造・`sdd-*` 名前空間非衝突（`UT-01`, `UT-02`）、`references/` 要件・障害回復手順（`UT-16`, `UT-18`, `UT-20`, `IT-05`）、`scripts/*.py` AST・スタブ実行・直接 `python3` ガード `exit 2`（`UT-17`, `UT-21`）、`AGENTS.openspec.md` < 12,000B・合算 `<= 16,000B`（`UT-12`）、および `config.yaml`/`README.md` 旧参照除去（`UT-26`）のテストを追加し、失敗（Red）を確認する
+- [x] 2.2 `pg-implementer` によるスキル群作成: `openspec-kit/skills/sdd-{propose,apply,archive}/SKILL.md`、各スキル自己完結 `references/{antigravity-orchestration.md,sdd-reference.md}`、および `scripts/run_{propose,archive}_review.py`（直接実行ガード付き）を作成し、スキル構造・Python スクリプトテスト（`UT-01`, `UT-02`, `UT-16`〜`UT-21`, `IT-05`）の Green を確認する
+- [x] 2.3 `pg-implementer` による `AGENTS.openspec.md` スリム化・設定更新: `openspec-kit/AGENTS.openspec.md` を 12,000 バイト未満へ圧縮し、`openspec-kit/config.yaml` および `openspec-kit/README.md` のワークフロー参照を `.agents/skills/sdd-*` へ更新して、`UT-12`・`UT-26` を含む Group 2 テスト全件の Green を確認する
+- [x] 2.4 Group 2 レビュー & Gate 2 検証: `pg-reviewer` / `qa-reviewer` によるレビューを実施して `reviews.md` に記録（`LGTM: true`）し、`verify-gate.ps1 -Gate apply` が `PASSED` になることを確認する（この時点では既存 `workflows/` テストも維持される）
 
 ## 3. インストーラ（`install.ps1` / `install.sh`）多面展開・安全移行と旧 `workflows/` 廃止
 
