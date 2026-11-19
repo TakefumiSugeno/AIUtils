@@ -141,3 +141,70 @@
 - **LGTM**: true
 - **保留指摘（申し送り）**: Cycle 1 指摘 6（`.openspec.yaml` の `x-level: L2` と `verify-gate` の `level:` キー差異）、および本 Cycle 2 指摘 2（`UT-12`/`UT-26` 対象分離、一時ファイル同一ディレクトリ配置）を Apply 時留意および Archive 時 `handover.md` へ転記
 - **次のアクション**: Gate 1 検証・ユーザー合意後に Apply へ進む
+
+---
+
+## Group 1 Apply レビュー Cycle 1: Task 1.3 (PG Reviewer / QA Reviewer)
+
+- **日時**: 2026-11-20
+- **フェーズ**: apply
+- **タスク**: Task 1.3（Group 1: `openspec-kit/agents/*.md` & `tests/openspec-kit.agents-skills.Tests.ps1`）
+- **レビュアー**: pg (`openspec/agents/pg-reviewer.md`) & qa (`openspec/agents/qa-reviewer.md`)
+- **使用プロトコル**: `openspec/templates/checklist_apply_impl.md`, `openspec/templates/checklist_apply_test.md`
+- **対象成果物**: `openspec-kit/agents/*.md`, `tests/openspec-kit.agents-skills.Tests.ps1`
+
+### 1. 挑戦的設問・Adversarial QA 要約
+
+- **PG Reviewer**: `openspec-kit/agents/*.md` の frontmatter と単一ライター返却契約の整合を確認しつつ、末尾契約セクションの重複（frontmatter 値再掲・Gemini 4/3.8 Flash 設計メモコピペ）・`qa-reviewer.md` の破壊テスト一時ファイル後始末/非コード例外規定・`pg-implementer.md` L30 用語不統一を改善提案（Minor）。
+- **QA Reviewer（破壊テスト実行）**: 一時スクラッチハーネス（ミューテーション `M1`〜`M5`・敵対的入力 `A1`〜`A9`・パーサ境界 `P1`〜`P5`）を実行し、`UT-19` の YAML リスト/`3.8-flash`/ホワイトリストすり抜け・`Get-ParsedAgent` のネストキー上書き/EOF閉じ/クォートコメント分離バグ・`UT-13`〜`UT-15` の契約チェック穴を検出（**バグ検出 / Red**）。
+
+### 2. 指摘事項・対応（Cycle 1）
+
+- **PG 指摘1〜3 [Minor / Suggestion]**: 重複50%削減、破壊テスト後始末＆非コード例外明記、`pg-implementer.md` 用語統一 → **採用（`pg-implementer` により修正済み）**
+- **QA 指摘1〜3 [Major] & 指摘4 [Minor]**: `UT-19` の `RawFrontmatter` 検査・`3.8-flash`・肯定採用文脈判定、`ConvertFrom-AgentMarkdown` パーサ堅牢化、`UT-13`〜`UT-15` 同一論理項目・同一文契約検査、`Pester >= 5.0.0` 明示 → **採用（`qa-tester` により修正済み）**
+
+### 3. 判定
+
+- **LGTM**: false
+- **次のアクション**: 修正後 Cycle 2 再レビューへ
+
+---
+
+## Group 1 Apply 再レビュー Cycle 2: Task 1.3 (PG Reviewer / QA Reviewer)
+
+- **日時**: 2026-11-20
+- **フェーズ**: apply
+- **タスク**: Task 1.3（Group 1 Cycle 2 再レビュー）
+- **レビュアー**: pg & qa
+- **使用プロトコル**: `openspec/templates/checklist_apply_impl.md`, `openspec/templates/checklist_apply_test.md`
+- **対象成果物**: `openspec-kit/agents/*.md`, `tests/openspec-kit.agents-skills.Tests.ps1`
+
+### 1. 挑戦的設問への回答
+
+- **PG Reviewer**: 重複50%削減・`qa-reviewer.md` の一時ファイル後始末＆非コード例外明記・`pg-implementer.md` 用語統一・Read-only 単一ライター契約順守をすべて確認。
+- **QA Reviewer**: 修正後の全ヘルパー関数に対する敵対的スクラッチ検証で、`A1`〜`A9`, `P1`〜`P5`, `C2-1`, `C2-2`, `C2-4` すべて期待通り検出/通過し、実ファイル Baseline 失敗 0 件を確認。
+
+### 2. Adversarial QA（破壊テスト実行結果）
+
+- **対象関数/モジュール**: `tests/openspec-kit.agents-skills.Tests.ps1`（`ConvertFrom-AgentMarkdown`, `Get-ParsedAgent`, `Get-MarkdownLogicalBlocks`, `Test-HasSingleWriterReturnContract`, `Get-DeprecatedGemini38Violations`）および `openspec-kit/agents/*.md`
+- **破壊テストコード名**: 一時スクラッチハーネス（`verify_cycle2.ps1`、テスト完了後に削除済み）
+- **実行コマンド**: `pwsh -NoProfile -File "<scratch>/verify_cycle2.ps1"` および `pwsh -Command "Import-Module Pester -MinimumVersion 5.0; Invoke-Pester ./tests -Output Normal"`
+- **実行判定**: 堅牢性確認（全破壊・ミューテーション入力を期待通り検出し、実ファイル全 56 テスト Pass / Skip 0 件）
+- **実行ログ要約**:
+
+```text
+Baseline failures: 0
+A1/A2/A3 (UT-19 bypass): [FAIL] detected | A4 (legit deprecation): [PASS]
+A5/P1/A6/P2/P5 (YAML parser edge): [PASS] | A8/A9/C2-1/C2-2 (contract bypass): [FAIL] detected
+Invoke-Pester ./tests: Tests Passed: 56, Failed: 0, Skipped: 0
+```
+
+### 3. 指摘事項
+
+- **QA 指摘1 [Suggestion / 任意]**: 英語肯定文脈併用ケース（`C2-3`）の検出余地（日本語規約のため実害なし）。Critical / Major 指摘 0 件。
+
+### 4. 判定
+
+- **LGTM**: true
+- **保留指摘（申し送り）**: なし
+- **次のアクション**: Gate 2 通過後、Task 1.1〜1.3 を完了とし Group 2 へ進む

@@ -2,9 +2,9 @@
 
 ## 1. エージェント定義のモデル差異・権限拡張 (`openspec-kit/agents/`)
 
-- [ ] 1.1 `qa-tester` による先行 Red テスト作成: `openspec-kit/agents/*.md` の `model_tier`・`thinking`・`write_tools` メタデータ、Read-only ロールの親へのテキスト返却契約、および Gemini 3.8 Flash 非採用を検証するテスト（`UT-13`〜`UT-15`, `UT-19`）を `tests/` に追加し、`Invoke-Pester` で失敗（Red）を確認する
-- [ ] 1.2 `pg-implementer` による Green 実装・Refactor: `openspec-kit/agents/{user-reviewer,se-reviewer,pg-reviewer,qa-reviewer,qa-tester,pg-implementer}.md` に frontmatter（`model_tier`, `thinking`, `write_tools`）と本文の権限・返却契約を追加し、Task 1.1 のテストが全件 Pass（Green）することを確認する
-- [ ] 1.3 Group 1 レビュー & Gate 2 検証: `pg-reviewer` / `qa-reviewer` によるレビューを実施して `reviews.md` に記録（`LGTM: true`）し、`pwsh ./openspec/scripts/verify-gate.ps1 -Gate apply -ChangeName "optimize-agy-models-and-skills"` が `PASSED` になることを確認する
+- [x] 1.1 `qa-tester` による先行 Red テスト作成: `openspec-kit/agents/*.md` の `model_tier`・`thinking`・`write_tools` メタデータ、Read-only ロールの親へのテキスト返却契約、および Gemini 3.8 Flash 非採用を検証するテスト（`UT-13`〜`UT-15`, `UT-19`）を `tests/` に追加し、`Invoke-Pester` で失敗（Red）を確認する
+- [x] 1.2 `pg-implementer` による Green 実装・Refactor: `openspec-kit/agents/{user-reviewer,se-reviewer,pg-reviewer,qa-reviewer,qa-tester,pg-implementer}.md` に frontmatter（`model_tier`, `thinking`, `write_tools`）と本文の権限・返却契約を追加し、Task 1.1 のテストが全件 Pass（Green）することを確認する
+- [x] 1.3 Group 1 レビュー & Gate 2 検証: `pg-reviewer` / `qa-reviewer` によるレビューを実施して `reviews.md` に記録（`LGTM: true`）し、`pwsh ./openspec/scripts/verify-gate.ps1 -Gate apply -ChangeName "optimize-agy-models-and-skills"` が `PASSED` になることを確認する
 
 ## 2. 5エージェント共通 Skills 化と `AGENTS.openspec.md` スリム化（`workflows/` は Group 3 まで維持）
 
