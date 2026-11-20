@@ -15,10 +15,10 @@
 
 ## 3. インストーラ（`install.ps1` / `install.sh`）多面展開・安全移行と旧 `workflows/` 廃止
 
-- [ ] 3.1 `qa-tester` による先行 Red テスト作成: `tests/openspec-kit.install.Tests.ps1` および `tests/openspec-kit.sh.Tests.ps1` を新仕様へ更新し、境界値（`UT-03`〜`UT-11`, `UT-22`〜`UT-25`）・C2 デシジョンテーブル（`DT-01`〜`DT-10`）・状態遷移（`ST-01`〜`ST-04`）・結合テスト/Fault Injection（`IT-01`〜`IT-08`）・Zero-State/Recovery E2E（`E2E-02`, `E2E-03`）を実装して失敗（Red）を確認する
-- [ ] 3.2 `pg-implementer` による PowerShell 版実装 & 旧 `workflows/` 廃止: `openspec-kit/install.ps1` に `-AgentTargets` 検証・5エージェント再帰展開（`.claude/agents/` 維持）・後段レガシー退避（衝突回避）・アトミック `AGENTS.md` 更新（破損検知・24KB 超過警告）・Zero-State/`-Force` 促し出力を実装し、`openspec-kit/workflows/` を削除して `Invoke-Pester ./tests/openspec-kit.install.Tests.ps1` 全件 Pass と `Invoke-ScriptAnalyzer` 警告ゼロを確認する
-- [ ] 3.3 `pg-implementer` による Bash 版実装・Refactor: `openspec-kit/install.sh` に `--agent-targets` 検証・再帰展開・`awk` ベースリテラル置換・後段レガシー退避・アトミック `AGENTS.md` 更新を実装し、LF 改行・`bash -n` 構文チェックおよび `Invoke-Pester ./tests/openspec-kit.sh.Tests.ps1`（`IT-01` パリティ含む）全件 Pass を確認する
-- [ ] 3.4 Group 3 レビュー & Gate 2 検証: `pg-reviewer` / `qa-reviewer`（L3 設計変更時は `se-reviewer`）によるレビューを実施して `reviews.md` に記録（`LGTM: true`）し、`verify-gate.ps1 -Gate apply` が `PASSED` になることを確認する
+- [x] 3.1 `qa-tester` による先行 Red テスト作成: `tests/openspec-kit.install.Tests.ps1` および `tests/openspec-kit.sh.Tests.ps1` を新仕様へ更新し、境界値（`UT-03`〜`UT-11`, `UT-22`〜`UT-25`）・C2 デシジョンテーブル（`DT-01`〜`DT-10`）・状態遷移（`ST-01`〜`ST-04`）・結合テスト/Fault Injection（`IT-01`〜`IT-08`）・Zero-State/Recovery E2E（`E2E-02`, `E2E-03`）を実装して失敗（Red）を確認する
+- [x] 3.2 `pg-implementer` による PowerShell 版実装 & 旧 `workflows/` 廃止: `openspec-kit/install.ps1` に `-AgentTargets` 検証・5エージェント再帰展開（`.claude/agents/` 維持）・後段レガシー退避（衝突回避）・アトミック `AGENTS.md` 更新（破損検知・24KB 超過警告）・Zero-State/`-Force` 促し出力を実装し、`openspec-kit/workflows/` を削除して `Invoke-Pester ./tests/openspec-kit.install.Tests.ps1` 全件 Pass と `Invoke-ScriptAnalyzer` 警告ゼロを確認する
+- [x] 3.3 `pg-implementer` による Bash 版実装・Refactor: `openspec-kit/install.sh` に `--agent-targets` 検証・再帰展開・`awk` ベースリテラル置換・後段レガシー退避・アトミック `AGENTS.md` 更新を実装し、LF 改行・`bash -n` 構文チェックおよび `Invoke-Pester ./tests/openspec-kit.sh.Tests.ps1`（`IT-01` パリティ含む）全件 Pass を確認する
+- [x] 3.4 Group 3 レビュー & Gate 2 検証: `pg-reviewer` / `qa-reviewer`（L3 設計変更時は `se-reviewer`）によるレビューを実施して `reviews.md` に記録（`LGTM: true`）し、`verify-gate.ps1 -Gate apply` が `PASSED` になることを確認する
 
 ## 4. 本リポジトリ再同期と結合・E2E・カバレッジ最終検証
 

@@ -276,3 +276,73 @@ Invoke-Pester ./tests/openspec-kit.agents-skills.Tests.ps1: Tests Passed: 54, Fa
 - **LGTM**: true
 - **保留指摘（申し送り）**: なし
 - **次のアクション**: Gate 2 通過後、Task 2.1〜2.4 を完了とし Group 3 へ進む
+
+---
+
+## Group 3 Apply レビュー Cycle 1: Task 3.4 (PG Reviewer / QA Reviewer)
+
+- **日時**: 2026-11-21
+- **フェーズ**: apply
+- **タスク**: Task 3.4（Group 3: `openspec-kit/install.ps1`, `install.sh`, `sdd-reference.md` L94, `workflows/` 削除, `tests/openspec-kit.{install,sh}.Tests.ps1`）
+- **レビュアー**: pg (`openspec/agents/pg-reviewer.md`) & qa (`openspec/agents/qa-reviewer.md`)
+- **使用プロトコル**: `openspec/templates/checklist_apply_impl.md`, `openspec/templates/checklist_apply_test.md`
+- **対象成果物**: `openspec-kit/install.ps1`, `openspec-kit/install.sh`, `openspec-kit/skills/sdd-propose/references/sdd-reference.md`, `tests/openspec-kit.{install,sh}.Tests.ps1`
+
+### 1. 挑戦的設問・Adversarial QA 要約
+
+- **PG Reviewer**: `install.ps1` のマーカー多重破損検知抜け、`install.ps1` と `install.sh` の `end` 後空行・同一行テキスト保持不整合、`install.sh` の `TMP_AGENTS` に `trap` クリーンアップ欠如（Major 3件）、および `mv 2>/dev/null`・`chmod` 握りつぶし・`grep --` 欠如・重複削減リファクタ（Minor/Suggestion 3件）を指摘。
+- **QA Reviewer（破壊テスト実行）**: `advqa_test.ps1` / `advqa_test2.ps1` を実実行し、① `BaseBranch = '{{EVIDENCE_DIR}}'` の二重置換（`Test E`）、② `two_begins_one_end` 破損 `AGENTS.md` の通過（`Test B`）、③ `SKILL.md` / `CLAUDE.md` ファイル位置の既存ディレクトリ衝突時の途中失敗（`Test F` / `Test H1`）、④ `BaseBranch = "feat/it's-broken"` 展開による `verify-gate.ps1` 構文エラー 15 件（`Test [3]`）を実測実証（**バグ検出 / Red**）。あわせて `install.sh` 同一行逆転・改行混入等（指摘5）およびテストのミューテーション死角・アサーション漏れ（`[DT-07]` の `[skip]` 誤マッチ、`[IT-01]` 改行正規化、`[UT-23]`/`[UT-24]`/`[IT-07]` 不足：指摘6）を指摘。
+
+### 2. 指摘事項・対応（Cycle 1）
+
+- **PG 指摘1〜3 & QA 指摘1〜5 [Major]**: 1 パス同時置換、`.ps1` `'`→`''` エスケープ、改行/NUL 事前拒否、マーカー回数・位置検証統一、`AGENTS.md` 文字位置切り出し＆空行保持の PS/Bash 完全パリティ、`install.sh` `mktemp` + `trap`、ファイル位置ディレクトリ衝突事前検証、診断出力・重複削減リファクタ → **採用（`pg-implementer` により修正済み）**
+- **QA 指摘6 [Major] & 指摘7 [Minor]**: `[DT-07]` 行単位厳格マッチング、`[IT-01]` 生バイト比較＋空行再同期パリティ、`[UT-23]` 23,999B/24,000B 境界、`[UT-24]` 6 パターン、`[UT-25]` 二重置換・`'`・`\n`、`[IT-06]`/`[IT-07]`/`[DT-01]`/`[DT-10]` 補完、`Invoke-Bash` の `MSYS=noglob`＋クォート修正 → **採用（`qa-tester` により修正済み）**
+
+### 3. 判定
+
+- **LGTM**: false
+- **次のアクション**: 修正後 Cycle 2 再レビューへ
+
+---
+
+## Group 3 Apply 再レビュー Cycle 2: Task 3.4 (PG Reviewer / QA Reviewer)
+
+- **日時**: 2026-11-21
+- **フェーズ**: apply
+- **タスク**: Task 3.4（Group 3 Cycle 2 再レビュー）
+- **レビュアー**: pg & qa
+- **使用プロトコル**: `openspec/templates/checklist_apply_impl.md`, `openspec/templates/checklist_apply_test.md`
+- **対象成果物**: `openspec-kit/install.ps1`, `openspec-kit/install.sh`, `openspec-kit/skills/sdd-propose/references/sdd-reference.md`, `tests/openspec-kit.{install,sh}.Tests.ps1`
+
+### 1. 挑戦的設問への回答
+
+- **PG Reviewer**: マーカー回数・位置検証の統一、`render_agents_md` と PS 版の切り出し・空行保持パリティ、`mktemp`+`trap`、1 パス置換・エスケープ・全ファイル位置衝突事前チェック・エラー診断出力・共通化リファクタを確認し、テスト改ざんなしを確認。
+- **QA Reviewer**: Cycle 1 でバグ検出した全攻撃ケースを再実行し、すべて適切にエラー拒否・無変更・構文エラー 0 件で防がれること、および `[DT-07]` 警告行アサーションや `[IT-01]` バイト一致テストの強化を確認。
+
+### 2. Adversarial QA（破壊テスト実行結果）
+
+- **対象関数/モジュール**: `openspec-kit/install.ps1`（および `install.sh` 静的精査＋親環境 `sh.Tests.ps1` 全 38 件 Pass）
+- **破壊テストコード名**: 一時スクラッチ `advqa_cycle2.ps1`（検証終了後に削除済み）
+- **実行コマンド**: `pwsh -NoProfile -File "<scratch>\advqa_cycle2.ps1"` および `Import-Module Pester -MinimumVersion 5.0; Invoke-Pester ./tests -Output Normal`
+- **実行判定**: 堅牢性確認（Green / 落とせず、全 4 スイート 151/151 テスト Pass / Skip 0 件）
+- **実行ログ要約**:
+
+```text
+[Test B/B2: duplicate/same-line-rev markers] THREW (Expected, no partial writes)
+[Test E: BaseBranch={{EVIDENCE_DIR}}] literal preserved?: True, no double-sub?: True
+[Test F/H1: SKILL.md or CLAUDE.md as Dir] THREW before writes (Partial templates created?: False)
+[Test 3: BaseBranch="feat/it's-broken"] verify-gate.ps1 parseErrors=0
+[Test 4: BaseBranch with newline] THREW before writes (Partial templates created?: False)
+[Test 5: DT-07 warning regex match] matchCount=1 (matched warning line only)
+Invoke-Pester ./tests: Tests Passed: 151, Failed: 0, Skipped: 0 (agents-skills:54, install:46, sh:38, verify-gate:13)
+```
+
+### 3. 指摘事項
+
+- **PG 指摘1 [Suggestion / 任意]**: `install.sh` 内の `awk` ブロック間の小規模重複（動作・安全性問題なしのため現状維持）。Critical / Major / Minor 指摘 0 件。
+
+### 4. 判定
+
+- **LGTM**: true
+- **保留指摘（申し送り）**: なし
+- **次のアクション**: Gate 2 通過後、Task 3.1〜3.4 を完了とし Group 4（本リポジトリ再同期と最終検証）へ進む

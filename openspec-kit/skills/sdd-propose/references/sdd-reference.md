@@ -91,7 +91,7 @@ L2 / L3 の変更では、コードを書く前に `openspec/templates/test_plan
 
 1. **Gate 0 ブランチ作成シーケンス**:
    - `git status --porcelain` で未コミット変更を確認し、存在する場合は `git stash push -u -m "wip: backup before switch to <change-name>"` で退避する。
-   - `{{BASE_BRANCH}}` を checkout & pull し、マージ済みローカルブランチを削除した上で `feature/<change-name>`（または `fix/<change-name>` 等）を作成する。
+   - `git checkout {{BASE_BRANCH}} && git pull origin {{BASE_BRANCH}} && git fetch --prune` を実行し、マージ済みローカルブランチを削除した上で `git checkout -b feature/<change-name>`（または `fix/<change-name>` 等）を作成する。
 2. **Gate 1 通過後の Commit**:
    - `openspec/changes/<name>/` 配下の全計画成果物（`proposal`, `specs`, `design`, `test_plan`, `tasks`, `mockup`, `reviews`）を `spec(<change-name>): <subject>` でコミットする。
 3. **禁止事項**:
