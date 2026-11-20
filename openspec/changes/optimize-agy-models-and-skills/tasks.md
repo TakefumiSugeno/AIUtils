@@ -22,8 +22,8 @@
 
 ## 4. 本リポジトリ再同期と結合・E2E・カバレッジ最終検証
 
-- [ ] 4.1 本リポジトリ再同期と後処理（`E2E-01`）: `pwsh ./openspec-kit/install.ps1 -TargetPath . -BaseBranch main -EvidenceDir test-results/ -AgentTargets all -Force -SkipConfig` を実行し、`openspec/config.yaml` の参照先を `.agents/skills/sdd-*` へ同期した上で、退避された旧 `.agents/workflows/sdd-*.md.bak*`（カスタム差分なし）を削除し、`AGENTS.md` < 24,000 バイトおよび 5 エージェントスキル展開を確認する
-- [ ] 4.2 全体品質・カバレッジ・フェーズゲート最終検証: `npx prettier --write` / `Invoke-ScriptAnalyzer` / `bash -n` を通過させた後、`Invoke-Pester ./tests -CodeCoverage ./openspec-kit/install.ps1` を実行して全件 Pass（skip 0 件）・C0 90%+（C1/C2 テスト全通過）・`test-results/` エビデンス出力を確認し、`verify-gate.ps1 -Gate apply` / `verify-gate.sh` が `PASSED` になることを確認する
+- [x] 4.1 本リポジトリ再同期と後処理（`E2E-01`）: `pwsh ./openspec-kit/install.ps1 -TargetPath . -BaseBranch main -EvidenceDir test-results/ -AgentTargets all -Force -SkipConfig` を実行し、`openspec/config.yaml` の参照先を `.agents/skills/sdd-*` へ同期した上で、退避された旧 `.agents/workflows/sdd-*.md.bak*`（カスタム差分なし）を削除し、`AGENTS.md` < 24,000 バイトおよび 5 エージェントスキル展開を確認する
+- [x] 4.2 全体品質・カバレッジ・フェーズゲート最終検証: `npx prettier --write` / `Invoke-ScriptAnalyzer` / `bash -n` を通過させた後、`Invoke-Pester ./tests -CodeCoverage ./openspec-kit/install.ps1` を実行して全件 Pass（skip 0 件）・C0 90%+（C1/C2 テスト全通過）・`test-results/` エビデンス出力を確認し、`verify-gate.ps1 -Gate apply` / `verify-gate.sh` が `PASSED` になることを確認する
 
 ## Workflow follow-up
 

@@ -4,7 +4,7 @@ schema: spec-driven
 # AIUtils の OpenSpec 設定（openspec-kit/config.yaml から生成し、本リポジトリ向けに調整）
 #   - キット側の汎用ルールを変更した場合は、こちらへも反映すること
 #   - `reviews:` は OpenSpec CLI では解釈されない独自キー（機械可読メタデータ）です。
-#     エージェントへの伝達は context / rules / operations と AGENTS.md / workflows で行います。
+#     エージェントへの伝達は context / rules / operations と AGENTS.md / skills で行います。
 # ---------------------------------------------------------------------------
 
 githubCopilot:
@@ -44,10 +44,10 @@ reviews:
       phases: [apply, archive]
 
   gate_script: "openspec/scripts/verify-gate.ps1"
-  workflows:
-    propose: ".agents/workflows/sdd-propose.md"
-    apply: ".agents/workflows/sdd-apply.md"
-    archive: ".agents/workflows/sdd-archive.md"
+  skills:
+    propose: ".agents/skills/sdd-propose/SKILL.md"
+    apply: ".agents/skills/sdd-apply/SKILL.md"
+    archive: ".agents/skills/sdd-archive/SKILL.md"
 
   templates:
     review_record: "openspec/templates/review_record.md"
