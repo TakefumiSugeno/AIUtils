@@ -829,4 +829,37 @@ Describe 'Group 2-C: AGENTS.openspec.md スリム化・非推奨モデル排除�
         $active | Should -BeNullOrEmpty -Because '旧 workflows/sdd-* へのアクティブ参照を skills/sdd-* へ更新する必要があります（YAML設定値での参照は全面禁止、文書内でも旧ファイルの退避・廃止注記のみ可）'
         $raw | Should -Match 'skills/sdd-(propose|apply|archive)' -Because '新パス skills/sdd-* への参照が必要です'
     }
+
+    It '[E2E-01] 本リポジトリ実体の AGENTS.md (<24KB・BOMなし)・openspec/config.yaml・5エージェント skills/sdd-*・.claude/agents がキットと同期している' {
+        $repoRoot = (Join-Path $script:KitRootPath '..' | Resolve-Path).Path
+        $agentsPath = Join-Path $repoRoot 'AGENTS.md'
+        $agentsBytes = [IO.File]::ReadAllBytes($agentsPath)
+        $hasBom = ($agentsBytes.Length -ge 3 -and $agentsBytes[0] -eq 0xEF -and $agentsBytes[1] -eq 0xBB -and $agentsBytes[2] -eq 0xBF)
+        $hasBom | Should -BeFalse -Because 'リポジトリの AGENTS.md は UTF-8 (BOM なし) である必要があります'
+        $agentsBytes.Length | Should -BeLessThan 24000 -Because "Antigravity CLI 24,000B 上限未満が必要です（実測: $($agentsBytes.Length)B）"
+
+        $repoCfg = Read-Utf8 (Join-Path $repoRoot 'openspec/config.yaml')
+        @(Get-LegacyWorkflowReferenceViolations -FileName 'openspec/config.yaml' -Raw $repoCfg) | Should -BeNullOrEmpty
+
+        $legacySdd = @()
+        $legacyWfDir = Join-Path $repoRoot '.agents/workflows'
+        if (Test-Path -LiteralPath $legacyWfDir -PathType Container) {
+            $legacySdd = @(Get-ChildItem -LiteralPath $legacyWfDir -Filter 'sdd-*' -File)
+        }
+        $legacySdd.Count | Should -Be 0 -Because '旧 .agents/workflows/sdd-* は残存してはなりません'
+
+        $expectedSkills = @(Get-ChildItem -LiteralPath $script:KitSkills -Recurse -File | ForEach-Object {
+                $_.FullName.Substring($script:KitSkills.Length).TrimStart('\', '/').Replace('\', '/')
+            } | Sort-Object)
+        foreach ($agentRoot in @('.agents', '.claude', '.github', '.opencode', '.hermes')) {
+            $skillsDir = Join-Path $repoRoot "$agentRoot/skills"
+            foreach ($rel in $expectedSkills) {
+                $dstFile = Join-Path $skillsDir $rel
+                Test-Path -LiteralPath $dstFile -PathType Leaf | Should -BeTrue -Because "$agentRoot/skills/$rel が同期されている必要があります"
+                $srcRaw = (Read-Utf8 (Join-Path $script:KitSkills $rel)).Replace("`r`n", "`n").Replace('{{BASE_BRANCH}}', 'main').Replace('{{EVIDENCE_DIR}}', 'test-results/')
+                $dstRaw = (Read-Utf8 $dstFile).Replace("`r`n", "`n")
+                $dstRaw | Should -Be $srcRaw -Because "$agentRoot/skills/$rel の内容が openspec-kit/skills/ と一致する必要があります"
+            }
+        }
+    }
 }

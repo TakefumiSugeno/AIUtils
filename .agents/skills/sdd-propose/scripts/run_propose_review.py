@@ -10,7 +10,7 @@ _parallel = globals().get("parallel")
 if not callable(_agent) or not callable(_parallel):
     sys.stderr.write(
         "[sdd-propose] このスクリプトは Antigravity CLI の run_workflow ツール専用です。\n"
-        "代替手順: SKILL.md または references/antigravity-orchestration.md に従い、\n"
+        "代替手順: .agents/skills/sdd-propose/SKILL.md または .agents/skills/sdd-propose/references/antigravity-orchestration.md に従い、\n"
         "invoke_subagent (Model: 'pro') で user-reviewer / se-reviewer を実行してください。\n"
     )
     sys.exit(2)
@@ -29,13 +29,13 @@ _CHANGE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 def _resolve_change_name() -> str:
     raw_args = globals().get("args")
     if not isinstance(raw_args, dict):
-        raise ValueError("args dictionary with 'change_name' is required")
+        raise ValueError("args dictionary with 'change_name' is required (例: args={'change_name': '<change-name>'})")
     raw_name = raw_args.get("change_name") if "change_name" in raw_args else raw_args.get("change")
     if not isinstance(raw_name, str):
-        raise ValueError("change_name must be a non-empty string")
+        raise ValueError("change_name must be a non-empty string (例: args={'change_name': '<change-name>'})")
     name = raw_name.strip()
     if not _CHANGE_NAME_RE.fullmatch(name):
-        raise ValueError(f"Invalid change_name: {raw_name!r}")
+        raise ValueError(f"Invalid change_name: {raw_name!r} (英数字・'.'・'_'・'-' のみ指定可、先頭は英数字)")
     return name
 
 

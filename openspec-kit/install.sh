@@ -290,7 +290,17 @@ assert_dir_tree_destinations "$KIT_ROOT/templates" "$OPENSPEC_DIR/templates" 0
 assert_dir_tree_destinations "$KIT_ROOT/agents" "$OPENSPEC_DIR/agents" 0
 assert_dir_tree_destinations "$KIT_ROOT/scripts" "$OPENSPEC_DIR/scripts" 0
 
+DEPLOY_CLAUDE_AGENTS=0
+for agent_name in "${RESOLVED_TARGETS[@]}"; do
+    if [[ "$agent_name" == "claude" ]]; then
+        DEPLOY_CLAUDE_AGENTS=1
+        break
+    fi
+done
 if [[ -e "$TARGET/.claude" ]]; then
+    DEPLOY_CLAUDE_AGENTS=1
+fi
+if [[ "$DEPLOY_CLAUDE_AGENTS" -eq 1 ]]; then
     assert_not_regular_file "$TARGET/.claude"
     assert_dir_tree_destinations "$KIT_ROOT/agents" "$TARGET/.claude/agents" 0
 fi
@@ -512,7 +522,7 @@ copy_kit_directory "$KIT_ROOT/templates" "$OPENSPEC_DIR/templates" "templates" 0
 
 # --- 2. サブエージェント定義 --------------------------------------------------
 copy_kit_directory "$KIT_ROOT/agents" "$OPENSPEC_DIR/agents" "agents" 0 0 0
-if [[ -d "$TARGET/.claude" ]]; then
+if [[ "$DEPLOY_CLAUDE_AGENTS" -eq 1 ]]; then
     copy_kit_directory "$KIT_ROOT/agents" "$TARGET/.claude/agents" ".claude/agents" 0 0 0
 fi
 

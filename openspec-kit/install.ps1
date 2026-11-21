@@ -288,7 +288,8 @@ Assert-DirectoryTreeDestinations (Join-Path $kitRoot 'agents') (Join-Path $opens
 Assert-DirectoryTreeDestinations (Join-Path $kitRoot 'scripts') (Join-Path $openspecDir 'scripts')
 
 $claudeRoot = Join-Path $target '.claude'
-if (Test-Path -LiteralPath $claudeRoot) {
+$deployClaudeAgents = ($resolvedTargets -contains 'claude') -or (Test-Path -LiteralPath $claudeRoot)
+if ($deployClaudeAgents) {
     Assert-PathNotLeaf $claudeRoot
     Assert-DirectoryTreeDestinations (Join-Path $kitRoot 'agents') (Join-Path $claudeRoot 'agents')
 }
@@ -348,7 +349,7 @@ Copy-KitDirectory (Join-Path $kitRoot 'templates') (Join-Path $openspecDir 'temp
 
 # --- 2. サブエージェント定義 --------------------------------------------------
 Copy-KitDirectory (Join-Path $kitRoot 'agents') (Join-Path $openspecDir 'agents') 'agents'
-if (Test-Path -LiteralPath $claudeRoot -PathType Container) {
+if ($deployClaudeAgents) {
     Copy-KitDirectory (Join-Path $kitRoot 'agents') (Join-Path $claudeRoot 'agents') '.claude/agents'
 }
 

@@ -40,7 +40,15 @@ openspec-kit/skills/sdd-{propose,apply,archive}/
 ```
 
 - **自己完結性の確定**: 親ディレクトリ外参照やスキル間参照の不安定性を排除するため、`sdd-reference.md` は各スキル配下の `references/sdd-reference.md` としてフェーズ別に自己完結配置する。
-- **既存 `.claude/agents/` 維持**: 現行 `install.ps1` / `install.sh` の `.claude/agents/*.md` コピーは維持し、`model_tier` 等を追加した 6 ロール定義をそのまま同期する。
+- **既存 `.claude/agents/` 維持**: 現行 `install.ps1` / `install.sh` の `.claude/agents/*.md` コピーは維持し（`claude` ターゲット resolved 時または `.claude/` 既存時に展開して初回未生成を防止）、`model_tier` 等を追加した 6 ロール定義をそのまま同期する。
+
+#### 採用案とボツ案のトレードオフ比較
+
+| 候補方式                                           | 5エージェント互換性 | コンテキスト効率・運用コスト             | 採用可否・理由                                                                         |
+| -------------------------------------------------- | ------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| 旧 `.agents/workflows/*.md` 継続                   | 不可（Agy 非推奨）  | 中（単一 `.md`）                         | **ボツ**: Antigravity 2.0 以降非推奨であり他 4 エージェントが参照できないため廃止      |
+| Plugin バンドル（`.claude-plugin` / `.opencode` 等）| 不可（3仕様分裂）   | 高（環境ごとに形式・更新契機が分裂）     | **ボツ**: `.claude-plugin`・`.opencode/plugins`・Hermes `plugin.yaml` で非互換のため不採用 |
+| **Agent Skills（`SKILL.md`＋`references/`・`scripts/`）** | **全5種対応**       | **高（Progressive Disclosure＋自己完結）** | **採用**: 5 エージェント標準互換と肥大化防止・`install` 多面展開を両立可能             |
 
 ### 2. `install.ps1` / `install.sh` のターゲット解決・処理順序・安全性
 
@@ -56,7 +64,7 @@ openspec-kit/skills/sdd-{propose,apply,archive}/
   - ※ 明示指定時に `antigravity` を含めない場合（例: `claude,copilot`）は指定されたターゲットのみに展開し、`.agents/skills/` は作成しない。
 - **安全な実行順序（半壊防止）**:
   1. パラメータ・前提（`openspec/` 存在・展開先パス種別）検証
-  2. `templates/`・`agents/`（`openspec/agents/`＋`.claude/` 存在時 `.claude/agents/`）・`scripts/`・`skills/`（再帰コピー、スキップ件数カウント）配置
+  2. `templates/`・`agents/`（`openspec/agents/`＋`claude` ターゲット resolved 時または `.claude/` 既存時 `.claude/agents/`）・`scripts/`・`skills/`（再帰コピー、スキップ件数カウント）配置
   3. **`.agents/skills` がターゲットに含まれ、かつスキル配置が全成功した後にのみ**、既存の `.agents/workflows/sdd-{propose,apply,archive}.md` を退避
      - 衝突回避: `<file>.bak` が既にあれば `<file>.bak-<yyyyMMddHHmmss>-<counter>`（存在しない番号までインクリメント）へリネーム。リネーム失敗時はパスと復旧案内を出して非ゼロ終了。`opsx-*.md` 等には触れない。
   4. `config.yaml` / `AGENTS.md` / `.gitignore` / `CLAUDE.md`・`GEMINI.md` 更新
@@ -84,6 +92,7 @@ openspec-kit/skills/sdd-{propose,apply,archive}/
 | `qa-tester` | `flash` | `high` | `true` | `specs/`・`test_plan` からの高速 Red テスト生成 |
 | `pg-implementer` | `flash` | `medium` | `true` | Red テストを通す高速 Green 実装・Refactor |
 
+- **メタデータ契約とロール間差異の根拠**: `model_tier`・`thinking`・`write_tools` は CLI 自動解釈構文ではなく親エージェントが読み取る運用規約メタデータである。`qa-tester` を `flash` / `thinking: high` とするのは境界値・異常系の漏れを防ぐため、`pg-implementer` を `flash` / `thinking: medium` とするのは先行 Red テストに沿った高速実装反復のため、`qa-reviewer` のみ `write_tools: true` とするのは Adversarial QA で破壊テストを作成・実行するため（ただし既存コード・`reviews.md` 編集禁止）である。
 - **単一ライター原則**: `reviews.md` および `tasks.md` への書き込みは親エージェント（司令塔）のみが行い、サブエージェントは `review_record.md` 準拠のテキストまたは作業サマリを返却する。
 - **`run_workflow` スクリプト契約**（`scripts/run_propose_review.py`, `scripts/run_archive_review.py`）:
   - 実行開始時に `'agent' not in globals() or 'parallel' not in globals()` を検査し、通常 `python3` CLI 直叩き時は案内メッセージを標準エラーに出力して `sys.exit(2)` で安全停止する。
@@ -95,7 +104,7 @@ openspec-kit/skills/sdd-{propose,apply,archive}/
 
 ### 4. `AGENTS.openspec.md` スリム化（24,000 バイト上限対策）
 
-- 長大な C0/C1/C2 網羅表・ブランチ作成詳細コマンド・OpenSpec CLI リファレンス・レビュープロトコル詳細表を各スキル配下の `references/sdd-reference.md` へ分離する。
+- Antigravity CLI には 1 ルールファイル **24,000 バイト上限（超過すると末尾が切り捨てられ後続ルールが欠落する実害）** があるため、長大な C0/C1/C2 網羅表・ブランチ作成詳細コマンド・OpenSpec CLI リファレンス・レビュープロトコル詳細表を各スキル配下の `references/sdd-reference.md` へ分離する。
 - `AGENTS.openspec.md` 単体は **12,000 バイト未満**（目標 8〜10KB）に圧縮し、`AGENTS.project.md` との合算を 16,000 バイト以下（上限 24,000 バイトに対して十分な余裕）に保つ。
 
 ## Risks / Trade-offs

@@ -551,6 +551,46 @@ Describe 'install.sh' {
         }
     }
 
+    It '.claude/ 未存在の新規プロジェクトに --agent-targets claude を実行すると初回から .claude/agents と .claude/skills の両方が作成される' {
+        $t = $script:Target.Replace('\', '/')
+        $res = Invoke-Bash $script:InstallSh @('--target-path', $t, '--agent-targets', 'claude')
+        $res.ExitCode | Should -Be 0 -Because $res.Output
+        (Get-ChildItem (Join-Path $script:Target '.claude/agents') -File).Count | Should -Be 6
+        Test-Path -LiteralPath (Join-Path $script:Target '.claude/skills/sdd-propose/SKILL.md') | Should -BeTrue
+    }
+
+    It '必須 --target-path 未指定時、および既存 config.yaml / --overwrite-config / マーカーなし AGENTS.md 追記 / 非 @AGENTS.md 警告を正しく処理する' {
+        $noArg = Invoke-Bash $script:InstallSh @('--base-branch', 'main')
+        $noArg.ExitCode | Should -Not -Be 0
+
+        $cfgPath = Join-Path $script:Target 'openspec/config.yaml'
+        Write-Utf8NoBom $cfgPath "custom-config: true`n"
+        $agentsPath = Join-Path $script:Target 'AGENTS.md'
+        Write-Utf8NoBom $agentsPath "# Project Custom Rules`nkeep me`n"
+        $claudeMd = Join-Path $script:Target 'CLAUDE.md'
+        Write-Utf8NoBom $claudeMd "# Custom Claude`nkeep me`n"
+        $geminiMd = Join-Path $script:Target 'GEMINI.md'
+        Write-Utf8NoBom $geminiMd "# Custom Gemini`nkeep me`n"
+
+        $t = $script:Target.Replace('\', '/')
+        $res1 = Invoke-Bash $script:InstallSh @('--target-path', $t, '--base-branch', 'main', '--evidence-dir', 'test-results/')
+        $res1.ExitCode | Should -Be 0 -Because $res1.Output
+        (Read-Utf8 $cfgPath) | Should -Match 'custom-config: true'
+        Test-Path -LiteralPath (Join-Path $script:Target 'openspec/config.kit.yaml') | Should -BeTrue
+        $agentsAfter = Read-Utf8 $agentsPath
+        $agentsAfter | Should -Match '# Project Custom Rules'
+        $agentsAfter | Should -Match '<!-- openspec-kit:begin'
+        $res1.Output | Should -Match 'CLAUDE\.md'
+        $res1.Output | Should -Match 'GEMINI\.md'
+        (Read-Utf8 $claudeMd) | Should -Match '# Custom Claude'
+        (Read-Utf8 $geminiMd) | Should -Match '# Custom Gemini'
+
+        $res2 = Invoke-Bash $script:InstallSh @('--target-path', $t, '--base-branch', 'main', '--evidence-dir', 'test-results/', '--overwrite-config')
+        $res2.ExitCode | Should -Be 0 -Because $res2.Output
+        @(Get-ChildItem (Join-Path $script:Target 'openspec') -Filter 'config.yaml.bak-*' -File).Count | Should -BeGreaterOrEqual 1
+        (Read-Utf8 $cfgPath) | Should -Not -Match 'custom-config: true'
+    }
+
     It '[IT-01] 同一条件（<Mode>）で install.ps1 と install.sh の配置ファイル一覧・生バイト列・LF 統一・BOM 有無が完全一致する' -ForEach @(
         @{ Mode = 'auto'; PreCreateDirs = @('.claude', '.github') },
         @{ Mode = 'all'; PreCreateDirs = @() },

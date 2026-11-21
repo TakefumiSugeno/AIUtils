@@ -209,8 +209,23 @@ Describe 'install.ps1' {
             foreach ($dir in @('.agents/skills', '.claude/skills', '.github/skills', '.opencode/skills', '.hermes/skills')) {
                 (Get-RelativeFilePaths (Join-Path $script:Target $dir)) | Should -Be $expectedRel -Because "$dir にスキル一式が必要です"
             }
+            (Get-ChildItem (Join-Path $script:Target '.claude/agents') -File).Count | Should -Be 6
             Test-Path -LiteralPath (Join-Path $wfDir 'sdd-propose.md') | Should -BeFalse
             Test-Path -LiteralPath (Join-Path $wfDir 'sdd-propose.md.bak') | Should -BeTrue
+        }
+
+        It '[DT-04] .claude/ 未存在の新規プロジェクトに -AgentTargets claude を実行すると初回から .claude/agents と .claude/skills の両方が作成され 2 回目も冪等である' {
+            Test-Path -LiteralPath (Join-Path $script:Target '.claude') | Should -BeFalse
+
+            Invoke-Installer $script:Target @{ AgentTargets = 'claude' } | Out-Null
+
+            $expectedRel = Get-RelativeFilePaths $script:KitSkills
+            (Get-RelativeFilePaths (Join-Path $script:Target '.claude/skills')) | Should -Be $expectedRel
+            (Get-ChildItem (Join-Path $script:Target '.claude/agents') -File).Count | Should -Be 6
+
+            Invoke-Installer $script:Target @{ AgentTargets = 'claude'; Force = $true; SkipConfig = $true } | Out-Null
+            (Get-RelativeFilePaths (Join-Path $script:Target '.claude/skills')) | Should -Be $expectedRel
+            (Get-ChildItem (Join-Path $script:Target '.claude/agents') -File).Count | Should -Be 6
         }
 
         It '[UT-05][DT-04][UT-11] -AgentTargets " Claude , copilot "（antigravity を含まない CSV）では .claude/skills と .github/skills のみ作成し、.agents/skills は作成せず旧 .agents/workflows/sdd-*.md も退避しない' {

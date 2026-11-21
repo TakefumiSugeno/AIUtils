@@ -80,7 +80,7 @@ Gate 3 通過後、以下のステップを自律的に完走させる。
 2. 自動フォーマットを実行し、アーカイブ結果をコミットする:
    ```bash
    npx prettier --write "openspec/**/*.md"
-   git add openspec/ README.md
+   git add openspec/   # README.md 等を更新した場合は併せてステージング
    git commit -m "chore(<change-name>): archive change and sync specs"
    ```
 3. トピックブランチをリモートへプッシュする:

@@ -13,7 +13,7 @@
 | `openspec/agents/qa-tester.md`     | `flash`      | `"flash"`                | Gemini 4 Hydrogen 級     | `true`        | `true`                              |
 
 - Propose フェーズで使うロールは `user-reviewer` / `se-reviewer`（レビュー）と、`test_plan.md` 作成を委譲する場合の `qa-tester` の 3 つ。
-- `model_tier` と `write_tools` は必ずロール定義ファイルの値を正とし、本書の表と食い違う場合はロール定義を優先する。
+- `model_tier` と `write_tools` は必ずロール定義ファイルの値を正とし、本書の表と食い違う場合はロール定義を優先する（`model_tier` / `thinking` / `write_tools` は CLI 自動構文ではなく、親エージェントが参照する運用規約メタデータ。`thinking` は推論深度の運用指針としてプロンプト指示等に反映する）。
 - Gemini 3.8 Flash は非推奨のため使用しない。
 
 ## 2. define_subagent（物理的な書き込み分離）
@@ -42,7 +42,7 @@
 
 `scripts/run_propose_review.py` は `run_workflow` ツール専用スクリプトで、`user-reviewer` と `se-reviewer` を `Model: "pro"` で並列起動する。
 
-1. `run_workflow` ツールに `scripts/run_propose_review.py` を指定し、`args` に `{"change_name": "<change-name>"}` を渡す。
+1. `run_workflow` ツールに `.agents/skills/sdd-propose/scripts/run_propose_review.py`（リポジトリルート基準）を指定し、`args` に `{"change_name": "<change-name>"}` を渡す。
 2. スクリプトは `phase("Propose Review")` のもとで `parallel` により 2 ロールを起動し、ロール別のレビュー結果テキスト（`review_record.md` 形式）を返す。
 3. 親エージェントが各結果を `openspec/changes/<change-name>/reviews.md` へ追記し、`Critical` / `Major` の有無を判定する（最大 3 サイクル）。
 

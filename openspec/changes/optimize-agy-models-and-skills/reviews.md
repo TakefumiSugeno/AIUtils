@@ -346,3 +346,106 @@ Invoke-Pester ./tests: Tests Passed: 151, Failed: 0, Skipped: 0 (agents-skills:5
 - **LGTM**: true
 - **保留指摘（申し送り）**: なし
 - **次のアクション**: Gate 2 通過後、Task 3.1〜3.4 を完了とし Group 4（本リポジトリ再同期と最終検証）へ進む
+
+
+---
+
+# レビュー記録: optimize-agy-models-and-skills / archive / Cycle 1 (4ロール並列)
+
+- **日時**: 2026-11-21
+- **フェーズ**: archive
+- **レビュアー**: user (`openspec/agents/user-reviewer.md`) / se (`openspec/agents/se-reviewer.md`) / pg (`openspec/agents/pg-reviewer.md`) / qa (`openspec/agents/qa-reviewer.md`)
+- **使用プロトコル**: `openspec/templates/checklist_archive.md`
+- **対象成果物**: `openspec/changes/optimize-agy-models-and-skills/{proposal.md,specs/**/spec.md,design.md,test_plan.md,tasks.md,handover.md,reviews.md}`, `openspec-kit/{README.md,AGENTS.openspec.md,config.yaml,install.ps1,install.sh,agents/*.md,skills/**,scripts/*}`, `tests/openspec-kit.*.Tests.ps1`, `AGENTS.md`, `openspec/config.yaml`
+
+---
+
+## 1. 挑戦的設問への回答（4ロール評価サマリ）
+
+- **User Reviewer**: `handover.md` の `-AgentTargets` 既定値誤記（`all` と誤記、正は `auto`）、`openspec-kit/README.md` への背景 Why・5 エージェント一覧・Plugin 不採用理由・24KB 上限理由・`-AgentTargets`・`verify-gate.sh`・トラブルシューティング／ロールバックの欠落、`design.md` の却下案比較と `model_tier`/`thinking`/`write_tools` 規約解説不足、`run_*_review.py` エラー案内と `SKILL.md` / `AGENTS.openspec.md` 注記の不足を指摘（Major 3 件、Minor 2 件）。
+- **PG Reviewer**: `.claude/` 未存在環境へ `-AgentTargets claude` / `all` 初回実行時に `.claude/agents/` が作られず 2 回目に生成される順序依存バグ（Major 1 件）、`handover.md` への技術的負債・将来罠の転記不足（Major 1 件）、`install.sh` 内 `awk` 重複＋置換文字長マジックナンバー `15`/`16` 整理案（Suggestion 1 件）を指摘。
+- **SE Reviewer**: `reviews.md` Propose Cycle 2 SE 指摘 2 の `handover.md` 転記漏れと本リポジトリ向け継続回帰テスト未自動化（Major 1 件）、未記録技術的負債・将来罠（`x-level` フォールバック誤判定・`run_*_review.py` スタブ検証限界・削除同期非対応・24KB 非ブロック・`verify-gate.sh` BSD sed 非互換・未実行 DoD）の整理不足（Major 1 件）、外部導入先ロールバックと部分並列復旧導線の不足（Minor 1 件）を指摘。
+- **QA Reviewer**: 実測検証（同期一致・`run_*_review.py` 直叩き `exit 2` と 24 パターン異常 `ValueError`・`install.ps1` 7 種敵対テスト）で `-AgentTargets claude` 初回非冪等性を再確認するとともに、`Propose Cycle 2 SE 指摘 2` 転記漏れ（Major 1 件）、`E2E-01` および `install.sh` 一部分岐の自動テスト不在（Major 1 件）、ロールバック詳細・AST 代替限界記述・非冪等性是正（Minor 1 件）を指摘。
+
+---
+
+## 2. Adversarial QA（破壊テスト実行結果）
+
+- **対象関数/モジュール**: `openspec-kit/install.ps1`, `openspec-kit/skills/sdd-{propose,archive}/scripts/run_{propose,archive}_review.py`, 本リポジトリ再同期成果物
+- **破壊テストコード名**: QA Reviewer インライン PowerShell 7 破壊テスト（一時ディレクトリ使用・実行後削除済み）およびインライン Python 3.14 検証スクリプト
+- **実行判定**: 未修正ギャップ検出（`.claude/agents/` 初回未作成・`E2E-01` 自動テスト不在・`handover.md` 転記漏れ）
+- **実行ログ要約**:
+  - `DirectCLI run_{propose,archive}_review.py`: `exit=2 ok` / `24 bad ValueError rejected`
+  - `install.ps1 Test 4 (-AgentTargets claude on fresh project)`: `run1_claudeAgents=False run2_claudeAgents=True`
+
+---
+
+## 3. 指摘事項と Cycle 2 に向けた是正
+
+- **`.claude/agents/` 初回展開修正（PG 指摘 1 / QA 指摘 3）**: `install.ps1`・`install.sh` を修正し、`claude` ターゲット解決時または `.claude/` 既存時に初回から `.claude/agents/` を検証・展開するように統一、本リポジトリへ再同期済み。
+- **自動テスト拡充（PG 指摘 1 / QA 指摘 2 / SE 指摘 1）**: `tests/openspec-kit.install.Tests.ps1`（47 件）、`tests/openspec-kit.sh.Tests.ps1`（40 件：`--overwrite-config` / 既存 `config.yaml` / `NONE` 追記 / 警告 / 初回 `claude`）、`tests/openspec-kit.agents-skills.Tests.ps1`（55 件：`E2E-01`）を追加し、Pester 155/155 Pass・`install.ps1` Instruction 98.22% / Line 98.25%・`bash -n` 0 件・AST エラー 0 件を確認済み。
+- **ドキュメント・`handover.md` 是正（User 指摘 1〜5 / PG 指摘 2 / SE 指摘 1〜3 / QA 指摘 1〜3）**: `openspec-kit/README.md`、`design.md`、`AGENTS.openspec.md`、`config.yaml`、`sdd-{propose,archive}` スキル＆スクリプト、`handover.md` を全面改訂済み（保留の PG 指摘 3 `awk` Suggestion 等は `handover.md` §3・§4 へ引き継ぎ）。
+
+---
+
+## 4. 判定
+
+- **LGTM**: false
+- **保留指摘（申し送り）**: 改訂版 `handover.md` §3 へ全件統合済み
+- **次のアクション**: 是正後の全成果物に対し Archive 総括レビュー Cycle 2（4 ロール）を実施する
+
+
+---
+
+# レビュー記録: optimize-agy-models-and-skills / archive / Cycle 2 (4ロール並列)
+
+- **日時**: 2026-11-21
+- **フェーズ**: archive
+- **レビュアー**: user (`openspec/agents/user-reviewer.md`) / se (`openspec/agents/se-reviewer.md`) / pg (`openspec/agents/pg-reviewer.md`) / qa (`openspec/agents/qa-reviewer.md`)
+- **使用プロトコル**: `openspec/templates/checklist_archive.md`
+- **対象成果物**: `openspec/changes/optimize-agy-models-and-skills/{proposal.md,specs/**/spec.md,design.md,test_plan.md,tasks.md,handover.md,reviews.md}`, `openspec-kit/{README.md,AGENTS.openspec.md,config.yaml,install.ps1,install.sh,agents/*.md,skills/**,scripts/*}`, `tests/openspec-kit.*.Tests.ps1`, `AGENTS.md`, `openspec/config.yaml`, `test-results/{pester-results.xml,coverage.xml}`
+
+---
+
+## 1. 挑戦的設問への回答（Cycle 2 再検証サマリ）
+
+- **User Reviewer**: Cycle 1 指摘 1〜5 すべて解消を確認（`handover.md` の `-AgentTargets` 既定値 `auto` 訂正、`openspec-kit/README.md` の「設計背景（Why / トレードオフ）」・`verify-gate.sh` 表記載・`-AgentTargets` 解説・「トラブルシューティング・復旧・ロールバック」新設、`design.md` のボツ案比較表と frontmatter 契約根拠追記、`run_*_review.py` のパス・回復例改善、`.openspec.yaml` `x-level:` 注記、`sdd-archive/SKILL.md` の `git add openspec/` 修正）。初見エンジニアの追跡性と復旧導線の十分性を確認（`LGTM: true`）。
+- **PG Reviewer**: `install.ps1`・`install.sh` における `.claude/agents/` 初回未作成バグの修正と冪等性テスト追加、技術的負債・将来の罠・`awk` 共通化 Suggestion（`plen=length(...)`）の `handover.md` §3〜§5 への完全記録、および新規変更ファイルの安全性・`AGENTS.md` `15,680`B（24KB 未満）を確認（`LGTM: true`）。
+- **SE Reviewer**: `Propose Cycle 2 SE 指摘 2` 転記と `E2E-01` 自動回帰テスト整備、すべての残存負債（`x-level:` フォールバック罠、`run_*_review.py` 実機未検証・障害耐性限界、非削除同期、24KB 非ブロック・`verify-gate.sh` BSD sed `\L\1` 非互換、`Prettier` / `PSScriptAnalyzer` 未実行）の `handover.md` 記録、および本リポジトリ・外部導入先の両ロールバック手順の完全性を確認（`LGTM: true`）。
+- **QA Reviewer**: Cycle 1 指摘全件是正と最新 XML エビデンス（Pester 155/155 Pass、`install.ps1` Instruction 98.22% / Line 98.25%）、AST エラー 0、`openspec validate` 通過、5 エージェント 55 ファイル同期一致、および破壊テスト全件（`-WhatIf` 副作用なし、`-AgentTargets claude` 1回目/2回目冪等性、`.claude` 通常ファイル衝突時事前停止、`run_*_review.py` 直叩き `exit 2` と 13 パターン異常拒否）での堅牢性を実測確認（`LGTM: true`、補足 Suggestion として `[E2E-01]` テスト名と検査対象 `.claude/agents` の将来整理余地のみ言及）。
+
+---
+
+## 2. Adversarial QA（破壊テスト実行結果）
+
+- **対象関数/モジュール**: `openspec-kit/install.ps1`, `openspec-kit/skills/sdd-{propose,archive}/scripts/run_{propose,archive}_review.py`, 本リポジトリ同期成果物一式
+- **破壊テストコード名**: QA Reviewer インライン PowerShell 7 検証スクリプト（`advqa_c2_*`・実行後削除済み）およびインライン Python 3.14 検証スクリプト
+- **実行コマンド**: `pwsh` 破壊テスト一式＋`Parser::ParseFile`＋`openspec validate`、`python -c "<inline>"` 検証、および `Import-Module Pester -MinimumVersion 5.0; Invoke-Pester ./tests`
+- **実行判定**: 堅牢性確認（Green / 落とせず、全 4 スイート 155/155 Pass / Skip 0）
+- **実行ログ要約**:
+
+```text
+PesterXML total=155 errors=0 failures=0 skipped=0 (agents-skills:55, install:47, sh:40, verify-gate:13)
+Coverage install.ps1: INSTRUCTION=387/394 (98.22%) LINE=280/285 (98.25%)
+TestC (-AgentTargets claude 1st vs 2nd idempotency): agents1=6 agents2=6 equal=True
+ClaudeFileBlock (.claude as regular file + -AgentTargets claude): threw=True partialTemplates=False
+5AgentSyncMismatches=0 (55 files across .agents/.claude/.github/.opencode/.hermes)
+PythonOK run_propose_review.py: direct=exit2 bad=13 ok=2 | run_archive_review.py: direct=exit2 bad=13 ok=4
+```
+
+---
+
+## 3. 指摘事項
+
+- Critical / Major / Minor 指摘なし（全 4 ロールにて是正確認済み。保留指摘および技術的負債・将来改善候補はすべて `handover.md` §3・§4 へ記録済み。補足 Suggestion 1 件: `[E2E-01]` タイトルへの `.claude/agents` 検査将来追加余地のみ、他テストで網羅済みのため即時対応不要）。
+
+---
+
+## 4. 判定
+
+- **LGTM**: true
+- **条件付きLGTM**: なし
+- **引き継ぎ完了確認**: handover.md に全ての負債・申し送り・ロールバック手順が記録済み
+- **リリース可否**: 即時リリース可
+- **承認者**: User / SE / PG / QA Reviewer Agent（全 4 ロール LGTM）
+- **次のアクション**: Gate 3（`verify-gate.ps1 -Gate archive` / `verify-gate.sh --gate archive`）検証通過後、`openspec archive "optimize-agy-models-and-skills"` を実行し、PR を自動作成する

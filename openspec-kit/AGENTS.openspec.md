@@ -5,7 +5,7 @@
 - **Single Source of Truth**: システム仕様の正本は `openspec/specs/`。OpenSpec 管理外に仕様書・タスクを新規作成・二重管理しない。
 - **フェーズゲート駆動**: すべての変更は **Explore → [Gate 0] → Propose (`sdd-propose`) → [Gate 1] → Apply (`sdd-apply`) → [Gate 2] → Archive (`sdd-archive` / [Gate 3])** のゲートを通過して進める。
 - **サブエージェント6ロール分業（TDD 3権分立）**: テスト作成（`qa-tester`）・実装（`pg-implementer`）・批判的レビュー（`user/se/pg/qa-reviewer`）のコンテキストを分離し、甘いテスト・テスト改ざん・追認レビューを構造的に防ぐ。
-- **詳細手順とリファレンス**: 各フェーズ実行時は `.agents/skills/sdd-{propose,apply,archive}/SKILL.md`（および同ディレクトリ配下の `references/sdd-reference.md`・`references/antigravity-orchestration.md`）を必ず参照すること。
+- **詳細手順とリファレンス**: 各フェーズ実行時は導入先スキル配下の `sdd-{propose,apply,archive}/SKILL.md`（`.agents/skills/`、`.claude/skills/`、`.github/skills/`、`.opencode/skills/`、`.hermes/skills/` のうち導入先ディレクトリ配下、および同 `references/sdd-reference.md`・`references/antigravity-orchestration.md`）を必ず参照すること。
 
 ### ディレクトリ構成
 
@@ -22,7 +22,7 @@
 
 ### 適用規模レベル（L1 / L2 / L3）
 
-変更開始時に規模レベルを決定し、`.openspec.yaml`（`level: L2` 等）と `proposal.md` に明記する。
+変更開始時に規模レベルを決定し、`.openspec.yaml`（`level: L2` または CLI 警告回避時は `x-level: L2`）と `proposal.md` に明記する。
 
 | 項目                 | L1（軽微: typo・設定・局所修正） | L2（通常: 機能追加・仕様変更・通常バグ）                                        | L3（大規模: アーキテクチャ・破壊的変更・DB変更） |
 | -------------------- | -------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------ |
